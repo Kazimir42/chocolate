@@ -1,0 +1,40 @@
+{
+  "name": "Chocolate",
+  "short_name": "Chocolate",
+  "theme_color": "#111111",
+  "background_color": "#D2691E",
+  "display": "standalone",
+  "orientation": "any",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icons/icon-256.png",
+      "type": "image/png",
+      "sizes": "256x256"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/1.png",
+      "type": "image/png",
+      "sizes": "640x480",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/2.png",
+      "type": "image/png",
+      "sizes": "640x480"
+    }
+  ]
+}
