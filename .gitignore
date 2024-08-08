@@ -38,6 +38,8 @@ next-env.d.ts
 # Auto Generated PWA files
 **/public/sw.js
 **/public/workbox-*.js
+**/public/sw.js.map
+**/public/workbox-*.js.map
 
 # other
 .idea/
