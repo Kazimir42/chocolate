@@ -102,6 +102,9 @@ export default function Home() {
     function finishRound() {
         resetTimer();
 
+        const audio = document.getElementById('roundEndSound');
+        audio.play();
+
         // There are next step, so its a new round
         if (nextStep) {
             steps.forEach((step, index) => {
@@ -131,12 +134,18 @@ export default function Home() {
             }
 
         }
-
-
     }
+
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+
 
     return (
         <main className="flex min-h-screen flex-col items-center">
+            <audio className={'hidden'} id="roundEndSound" src="/sounds/1081.mp3"></audio>
             {!isLoading ? (
 
                 isEnded ?
@@ -179,7 +188,7 @@ export default function Home() {
 
                                 <div className={' flex flex-col p-8 gap-8 justify-center h-full'}>
                                     <h1 className={'text-center text-6xl font-bold'}>{currentStep?.name}</h1>
-                                    <p className={'text-center text-8xl font-bold'}>00:{currentStep?.duration - timer}</p>
+                                    <p className={'text-center text-8xl font-bold'}> {formatTime(currentStep?.duration - timer)}</p>
                                 </div>
                             </div>
                             <div className={'h-[30vh] bg-blue-400 w-full flex flex-col p-8 gap-4 justify-center'}>
@@ -187,7 +196,7 @@ export default function Home() {
                                     (
                                         <>
                                             <h1 className={'text-center text-4xl font-bold'}>{nextStep?.name}</h1>
-                                            <p className={'text-center text-6xl font-bold'}>{'00:' + nextStep.duration}</p>
+                                            <p className={'text-center text-6xl font-bold'}>{formatTime(nextStep.duration)}</p>
                                         </>
                                     ) : (
                                         <h1 className={'text-center text-6xl font-bold'}>{'Fini :)'}</h1>
