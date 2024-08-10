@@ -142,6 +142,7 @@ export default function Home() {
                 isEnded ? (
                     <div className={'h-screen bg-green-400 w-full'}>
                         <div className={'flex flex-col p-8 gap-8 justify-center h-full'}>
+                            {/* eslint-disable-next-line react/no-unescaped-entities */}
                             <h1 className={'text-center text-8xl font-bold'}>Good job, it's done :)</h1>
                         </div>
                     </div>
