@@ -30,12 +30,6 @@ export default function Home() {
     }, []);
 
     useEffect(() => {
-        if (currentStep) {
-            setIsLoading(false);
-        }
-    }, [currentStep]);
-
-    useEffect(() => {
         if (timer === currentStep?.duration) {
             finishRound();
         }
@@ -138,8 +132,7 @@ export default function Home() {
     return (
         <main className="flex min-h-screen flex-col items-center">
             <audio className={'hidden'} id="roundSound" src="/sounds/1081.mp3"></audio>
-            {!isLoading ? (
-                isEnded ? (
+            {isEnded ? (
                     <div className={'h-screen bg-green-400 w-full'}>
                         <div className={'flex flex-col p-8 gap-8 justify-center h-full'}>
                             {/* eslint-disable-next-line react/no-unescaped-entities */}
@@ -178,7 +171,7 @@ export default function Home() {
 
                             <div className={'flex flex-col p-8 gap-8 justify-center h-full'}>
                                 <h1 className={'text-center text-6xl font-bold'}>{currentStep?.name}</h1>
-                                <p className={'text-center text-8xl font-bold'}> {formatTime(currentStep?.duration - timer)}</p>
+                                <p className={'text-center text-8xl font-bold'}> {formatTime(currentStep?.duration ?? 0 - timer)}</p>
                             </div>
                         </div>
                         <div className={'h-[30vh] bg-blue-400 w-full flex flex-col p-8 gap-4 justify-center'}>
@@ -195,11 +188,8 @@ export default function Home() {
                         </div>
                     </>
                 )
-            ) : (
-                <div className={'flex flex-col h-screen justify-center'}>
-                    <h1 className={'text-center text-4xl font-bold'}>Loading...</h1>
-                </div>
-            )}
+            }
+
         </main>
     );
 }
