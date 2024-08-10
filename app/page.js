@@ -12,7 +12,7 @@ export default function Home() {
     const [isCounting, setIsCounting] = useState(false);
     const [timer, setTimer] = useState(0);
     const [isEnded, setIsEnded] = useState(false);
-    const intervalRef = useRef(null); // Utilisation de useRef pour conserver l'intervalle
+    const intervalRef = useRef(null);
     const [cyclesNumber, setCyclesNumber] = useState(0);
 
     useEffect(() => {
