@@ -171,7 +171,7 @@ export default function Home() {
 
                             <div className={'flex flex-col p-8 gap-8 justify-center h-full'}>
                                 <h1 className={'text-center text-6xl font-bold'}>{currentStep?.name}</h1>
-                                <p className={'text-center text-8xl font-bold'}> {formatTime(currentStep?.duration ?? 0 - timer)}</p>
+                                <p className={'text-center text-8xl font-bold'}> {formatTime(currentStep?.duration - timer)}</p>
                             </div>
                         </div>
                         <div className={'h-[30vh] bg-blue-400 w-full flex flex-col p-8 gap-4 justify-center'}>
