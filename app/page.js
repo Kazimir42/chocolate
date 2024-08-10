@@ -18,7 +18,6 @@ export default function Home() {
     }, []);
 
     useEffect(() => {
-        // Nettoyage lorsque le composant est démonté
         return () => clearInterval(intervalRef.current);
     }, []);
 
@@ -80,7 +79,10 @@ export default function Home() {
 
     function handleTimer() {
         if (!isCounting) {
-            console.log('start timer');
+            if (timer === 0) {
+                console.log('start timer');
+                playSound()
+            }
             setIsCounting(true);
             intervalRef.current = setInterval(() => {
                 setTimer(prevTimer => prevTimer + 1);
@@ -99,11 +101,15 @@ export default function Home() {
         clearInterval(intervalRef.current);
     }
 
+    function playSound() {
+        const audio = document.getElementById('roundSound');
+        audio.play()
+    }
+
     function finishRound() {
         resetTimer();
 
-        const audio = document.getElementById('roundEndSound');
-        audio.play();
+        playSound();
 
         // There are next step, so its a new round
         if (nextStep) {
@@ -145,7 +151,7 @@ export default function Home() {
 
     return (
         <main className="flex min-h-screen flex-col items-center">
-            <audio className={'hidden'} id="roundEndSound" src="/sounds/1081.mp3"></audio>
+            <audio className={'hidden'} id="roundSound" src="/sounds/1081.mp3"></audio>
             {!isLoading ? (
 
                 isEnded ?
@@ -160,9 +166,10 @@ export default function Home() {
                     ) :
                     (
                         <>
-                            <div className={'h-[70vh] bg-green-400 w-full pt-2 cursor-pointer'}
+                            <div className={'h-[70vh] bg-green-400 w-full cursor-pointer relative hover:bg-green-500 transition duration-300'}
                                  onClick={() => handleTimer()}>
-                                <Link className={'absolute font-bold text-xl left-2 top-2'} href={'/steps'}>
+                                <Link className={'absolute font-bold text-xl left-2 top-2'} href={'/steps'}
+                                      onClick={(e) => e.stopPropagation()}>
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                                          className="size-8">
                                         <path fillRule="evenodd"
@@ -171,9 +178,9 @@ export default function Home() {
                                     </svg>
                                 </Link>
                                 {!isCounting ?
-                                    <p className={'mx-auto w-full text-center h-0 font-light text-lg '}>Press the green
-                                        part
-                                        to start</p>
+                                    <div className={'absolute bottom-2 text-center w-full'}>
+                                        <p className={'font-light text-lg '}>press the green part to start</p>
+                                    </div>
                                     : null}
                                 <div className={'w-28 right-0 top-2 absolute font-semibold text-lg'}>
                                     <div className={'grid grid-cols-3'}>
