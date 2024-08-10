@@ -16,8 +16,7 @@ export default function Home() {
     const [cyclesNumber, setCyclesNumber] = useState(0);
 
     useEffect(() => {
-        const storedSteps = JSON.parse(localStorage.getItem('steps'));
-        setSteps(storedSteps || []);
+        resetSteps();
         setCyclesNumber(parseInt(localStorage.getItem('cycles_number')) || 0);
     }, []);
 
@@ -82,6 +81,25 @@ export default function Home() {
         setIsCounting(false);
         setTimer(0);
         clearInterval(intervalRef.current);
+    }
+
+    function resetSteps() {
+        let localSteps = localStorage.getItem('steps');
+
+        console.log(localSteps)
+        if (localSteps) {
+            localSteps = JSON.parse(localSteps);
+        }
+
+        const updatedSteps = localSteps?.map((localStep, index) => {
+            return {
+                ...localStep,
+                in_progress: false
+            };
+        });
+
+        localStorage.setItem('steps', JSON.stringify(updatedSteps || []));
+        setSteps(updatedSteps || []);
     }
 
     function playSound() {
