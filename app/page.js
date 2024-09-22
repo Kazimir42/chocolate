@@ -14,6 +14,7 @@ export default function Home() {
     const [isEnded, setIsEnded] = useState(false);
     const intervalRef = useRef(null);
     const [cyclesNumber, setCyclesNumber] = useState(0);
+    const [autoStartNextStep, setAutoStartNextStep] = useState(false);
 
     useEffect(() => {
         resetSteps();
@@ -31,8 +32,16 @@ export default function Home() {
     useEffect(() => {
         if (timer === currentStep?.duration) {
             finishRound();
+            setAutoStartNextStep(true);
         }
     }, [timer]);
+
+    useEffect(() => {
+        if (autoStartNextStep) {
+            handleClick();
+            setAutoStartNextStep(false)
+        }
+    }, [currentStep]);
 
     function defineCurrentAndNextStep() {
         if (steps.length === 0) return;
@@ -63,10 +72,10 @@ export default function Home() {
 
         if (currentStep?.duration === '' || currentStep?.duration === null) {
             if (!isCounting) {
-                playSound();
                 setIsCounting(true);
             } else {
-                finishRound(true);
+                finishRound();
+                setAutoStartNextStep(true);
             }
         } else {
             handleTimer()
@@ -77,7 +86,6 @@ export default function Home() {
         if (!isCounting) {
             if (timer === 0) {
                 console.log('start timer');
-                playSound();
             }
             setIsCounting(true);
             intervalRef.current = setInterval(() => {
@@ -121,12 +129,9 @@ export default function Home() {
         audio.play();
     }
 
-    function finishRound(noSound = false) {
+    function finishRound() {
         resetTimer();
-
-        if (!noSound) {
-            playSound();
-        }
+        playSound();
 
         if (nextStep) {
             const updatedSteps = steps.map((step, index) => {
