@@ -43,6 +43,34 @@ export default function Home() {
         }
     }, [currentStep]);
 
+
+    /////////////////////////
+    // START | NOT LOCK PHONE
+    /////////////////////////
+    let wakeLock = null;
+
+    const requestWakeLock = async () => {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake Lock activé');
+        } catch (err) {
+            console.error(`Erreur Wake Lock: ${err.name}, ${err.message}`);
+        }
+    };
+
+    window.addEventListener('load', requestWakeLock);
+
+    window.addEventListener('beforeunload', () => {
+        if (wakeLock !== null) {
+            wakeLock.release();
+            console.log('Wake Lock libéré');
+        }
+    });
+    /////////////////////////
+    // END | NOT LOCK PHONE
+    /////////////////////////
+
+
     function defineCurrentAndNextStep() {
         if (steps.length === 0) return;
 
