@@ -32,7 +32,7 @@ export default function RootLayout({children}) {
             <link rel="icon" href="/icons/icon-192.png"/>
             <title>{metadata.title}</title>
         </head>
-        <body className={inter.className}>{children}</body>
+        <body className={inter.className + ' text-text'}>{children}</body>
         </html>
     );
 }

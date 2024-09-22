@@ -21,7 +21,8 @@ export default function Home() {
         const newStep = {
             id: steps.length > 0 ? steps[steps.length - 1].id + 1 : 1,
             name: 'new step',
-            duration: 30,
+            duration: 60,
+            repetition: null
         };
 
         const updatedSteps = [...steps, newStep];
@@ -35,7 +36,7 @@ export default function Home() {
             if (step.id === id) {
                 return {
                     ...step,
-                    [field]: field === 'duration' && value === '' ? 0 : value,
+                    [field]: value,
                 };
             }
             return step;
@@ -51,8 +52,28 @@ export default function Home() {
         localStorage.setItem('steps', JSON.stringify(updatedSteps));
     }
 
+    function moveStep(direction, id) {
+        const index = steps.findIndex((step) => step.id === id);
+
+        if (index === -1) return;
+
+        const newSteps = [...steps];
+
+        if (direction === 'up' && index > 0) {
+            [newSteps[index - 1], newSteps[index]] = [newSteps[index], newSteps[index - 1]];
+        }
+
+        if (direction === 'down' && index < newSteps.length - 1) {
+            [newSteps[index + 1], newSteps[index]] = [newSteps[index], newSteps[index + 1]];
+        }
+
+        setSteps(newSteps);
+        localStorage.setItem('steps', JSON.stringify(newSteps));
+    }
+
+
     return (
-        <main className="flex min-h-screen flex-col items-center bg-blue-400 p-4 gap-8">
+        <main className="flex min-h-screen flex-col items-center bg-background-next p-4 gap-8">
             <Link className={'absolute font-bold text-xl left-2 top-2'} href={'/'}
                   onClick={(e) => e.stopPropagation()}>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-8">
@@ -62,22 +83,22 @@ export default function Home() {
                         d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z"/>
                 </svg>
             </Link>
-            <div>
-                <h2 className={'font-bold text-4xl pb-4'}>Configuration</h2>
-                <div>
-                    <label className={'text-lg font-semibold'} htmlFor={'inputCycleNumber'}>Number of cycles : </label>
+            <div className={'w-[90vw]'}>
+                <h2 className={'font-bold text-4xl pb-4 text-center'}>Configuration</h2>
+                <div className={'bg-primary rounded-md p-4 flex flex-col gap-1'}>
+                    <label className={'font-semibold'} htmlFor={'inputCycleNumber'}>Number of cycles </label>
                     <input className={'bg-transparent border border-white rounded-md p-2 text-lg'} type={'number'}
                            id={'inputCycleNumber'} min={1} max={99} value={cyclesNumber}
                            onChange={(e) => updateCyclesNumber(parseInt(e.target.value) || 0)}/>
                 </div>
             </div>
-            <div>
+            <div className={'w-[90vw]'}>
                 <h2 className={'font-bold text-4xl pb-4 text-center'}>Steps</h2>
-                <div className={'flex flex-col gap-2'}>
+                <div className={'flex flex-col gap-4'}>
                     {steps.map((step) => (
-                        <div key={step.id} className={'bg-blue-500 rounded-md p-2 flex flex-col gap-1'}>
-                            <div>
-                                <label className={'text-lg font-semibold'}>Name: </label>
+                        <div key={step.id} className={'bg-primary rounded-md p-4 flex flex-col gap-3'}>
+                            <div className={'flex flex-col gap-1'}>
+                                <label className={'font-semibold'}>Name</label>
                                 <input
                                     className={'bg-transparent border border-white rounded-md p-2 text-lg'}
                                     type={'text'}
@@ -85,19 +106,49 @@ export default function Home() {
                                     onChange={(e) => updateStep(step.id, 'name', e.target.value)}
                                 />
                             </div>
-                            <div>
-                                <label className={'text-lg font-semibold'}>Duration: </label>
-                                <input
-                                    className={'bg-transparent border border-white rounded-md p-2 text-lg'}
-                                    type={'number'}
-                                    min={1}
-                                    max={999}
-                                    value={step.duration}
-                                    onChange={(e) => updateStep(step.id, 'duration', e.target.value === '' ? '' : parseInt(e.target.value))}
-                                />
+                            <div className={'flex flex-row gap-2 w-full flex-wrap'}>
+                                <div className={'flex flex-col gap-1 grow'}>
+                                    <label className={'font-semibold'}>Duration (seconds)</label>
+                                    <input
+                                        className={'bg-transparent border border-white rounded-md p-2 text-lg'}
+                                        type={'number'}
+                                        value={step.duration}
+                                        onChange={(e) => updateStep(step.id, 'duration', e.target.value === '' ? null : parseInt(e.target.value))}
+                                    />
+                                </div>
+                                <div className={'flex flex-col gap-1 grow'}>
+                                    <label className={'font-semibold'}>Repetition</label>
+                                    <input
+                                        className={'bg-transparent border border-white rounded-md p-2 text-lg'}
+                                        type={'number'}
+                                        value={step.repetition}
+                                        onChange={(e) => updateStep(step.id, 'repetition', e.target.value === '' ? null : parseInt(e.target.value))}
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <button className={'bg-red-600 px-4 py-2 rounded-md mt-2'}
+
+                            <div className={'flex flex-row justify-between'}>
+                                <div className={'flex flex-row gap-1'}>
+                                    <button className={'bg-primary-dark px-4 py-2 rounded-md'}
+                                            onClick={() => moveStep('up', step.id)}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                             className="size-5">
+                                            <path fillRule="evenodd"
+                                                  d="M10 17a.75.75 0 0 1-.75-.75V5.612L5.29 9.77a.75.75 0 0 1-1.08-1.04l5.25-5.5a.75.75 0 0 1 1.08 0l5.25 5.5a.75.75 0 1 1-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0 1 10 17Z"
+                                                  clipRule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                    <button className={'bg-primary-dark px-4 py-2 rounded-md'}
+                                            onClick={() => moveStep('down', step.id)}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                             className="size-5">
+                                            <path fillRule="evenodd"
+                                                  d="M10 3a.75.75 0 0 1 .75.75v10.638l3.96-4.158a.75.75 0 1 1 1.08 1.04l-5.25 5.5a.75.75 0 0 1-1.08 0l-5.25-5.5a.75.75 0 1 1 1.08-1.04l3.96 4.158V3.75A.75.75 0 0 1 10 3Z"
+                                                  clipRule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <button className={'bg-danger px-4 py-2 rounded-md'}
                                         onClick={() => deleteStep(step.id)}>
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                                          className="size-6">
@@ -112,7 +163,7 @@ export default function Home() {
                     ))}
                 </div>
                 <div className={'mt-4'}>
-                    <button className={'bg-blue-600 px-4 py-2 rounded-md'} onClick={addNewStep}>
+                    <button className={'bg-primary-dark px-4 py-2 rounded-md'} onClick={addNewStep}>
                         + New step
                     </button>
                 </div>

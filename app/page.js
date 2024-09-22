@@ -59,6 +59,20 @@ export default function Home() {
         }
     }
 
+    function handleClick() {
+
+        if (currentStep?.duration === '' || currentStep?.duration === null) {
+            if (!isCounting) {
+                playSound();
+                setIsCounting(true);
+            } else {
+                finishRound(true);
+            }
+        } else {
+            handleTimer()
+        }
+    }
+
     function handleTimer() {
         if (!isCounting) {
             if (timer === 0) {
@@ -107,9 +121,12 @@ export default function Home() {
         audio.play();
     }
 
-    function finishRound() {
+    function finishRound(noSound = false) {
         resetTimer();
-        playSound();
+
+        if (!noSound) {
+            playSound();
+        }
 
         if (nextStep) {
             const updatedSteps = steps.map((step, index) => {
@@ -134,7 +151,7 @@ export default function Home() {
             setCurrentRound(1);
             if (currentCycle === cyclesNumber) {
                 setIsEnded(true);
-            }else {
+            } else {
                 setCurrentCycle(currentCycle + 1);
             }
             defineCurrentAndNextStep();
@@ -160,8 +177,8 @@ export default function Home() {
             ) : (
                 <>
                     <div
-                        className={'h-[70vh] bg-green-400 w-full cursor-pointer relative hover:bg-green-500 transition duration-300'}
-                        onClick={() => handleTimer()}>
+                        className={'h-[70vh] bg-background-current w-full cursor-pointer relative transition duration-300'}
+                        onClick={() => handleClick()}>
                         <Link className={'absolute font-bold text-xl left-2 top-2'} href={'/steps'}
                               onClick={(e) => e.stopPropagation()}>
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
@@ -188,16 +205,24 @@ export default function Home() {
                         </div>
 
                         <div className={'flex flex-col p-8 gap-8 justify-center h-full'}>
-                            <h1 className={'text-center text-6xl font-bold'}>{currentStep?.name}</h1>
-                            <p className={'text-center text-8xl font-bold'}> {formatTime(currentStep?.duration - timer)}</p>
+                            <h1 className={'text-center text-6xl font-bold'}>{currentStep?.repetition ? currentStep.repetition + ' ' + currentStep?.name : currentStep?.name}</h1>
+                            {currentStep?.duration ?
+                                <p className={'text-center text-8xl font-bold'}> {formatTime(currentStep?.duration - timer)}</p>
+                                :
+                                null
+                            }
                         </div>
                     </div>
-                    <div className={'h-[30vh] bg-blue-400 w-full flex flex-col p-8 gap-4 justify-center'}>
+                    <div className={'h-[30vh] bg-background-next w-full flex flex-col p-8 gap-4 justify-center'}>
                         {nextStep ?
                             (
                                 <>
-                                    <h1 className={'text-center text-4xl font-bold'}>{nextStep?.name}</h1>
-                                    <p className={'text-center text-6xl font-bold'}>{formatTime(nextStep.duration)}</p>
+                                    <h1 className={'text-center text-4xl font-bold'}>{nextStep?.repetition ? nextStep.repetition + ' ' + nextStep?.name : nextStep?.name}</h1>
+                                    {nextStep?.duration ?
+                                        <p className={'text-center text-6xl font-bold'}>{formatTime(nextStep.duration)}</p>
+                                        :
+                                        null
+                                    }
                                 </>
                             ) : (
                                 <h1 className={'text-center text-6xl font-bold'}>{'Fini :)'}</h1>
