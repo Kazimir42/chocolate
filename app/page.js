@@ -15,6 +15,7 @@ export default function Home() {
     const intervalRef = useRef(null);
     const [cyclesNumber, setCyclesNumber] = useState(0);
     const [autoStartNextStep, setAutoStartNextStep] = useState(false);
+    let wakeLock = null;
 
     useEffect(() => {
         resetSteps();
@@ -47,25 +48,26 @@ export default function Home() {
     /////////////////////////
     // START | NOT LOCK PHONE
     /////////////////////////
-    let wakeLock = null;
+    useEffect(() => {
+        const requestWakeLock = async () => {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake Lock activé');
+            } catch (err) {
+                console.error(`Erreur Wake Lock: ${err.name}, ${err.message}`);
+            }
+        };
 
-    const requestWakeLock = async () => {
-        try {
-            wakeLock = await navigator.wakeLock.request('screen');
-            console.log('Wake Lock activé');
-        } catch (err) {
-            console.error(`Erreur Wake Lock: ${err.name}, ${err.message}`);
-        }
-    };
+        requestWakeLock().then();
 
-    window.addEventListener('load', requestWakeLock);
+        return () => {
+            if (wakeLock !== null) {
+                wakeLock.release();
+                console.log('Wake Lock libéré');
+            }
+        };
+    }, [])
 
-    window.addEventListener('beforeunload', () => {
-        if (wakeLock !== null) {
-            wakeLock.release();
-            console.log('Wake Lock libéré');
-        }
-    });
     /////////////////////////
     // END | NOT LOCK PHONE
     /////////////////////////
