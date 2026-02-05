@@ -8,27 +8,47 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                primary: {
-                    DEFAULT: '#3b82f6',
-                    light: '',
-                    dark: '#2563eb',
+                orange: {
+                    DEFAULT: '#FF6B35',
+                    light: '#FF8C5A',
+                    dark: '#E85A24',
                 },
-                secondary: {
-                    DEFAULT: '#FF69b4',
-                    light: '',
-                    dark: '#3b82f6',
+                coral: {
+                    DEFAULT: '#FF7F66',
                 },
                 background: {
-                    DEFAULT: "#eee",
-                    current: '#4ade80',
-                    next: '#60a5fa',
+                    dark: '#1a1a2e',
+                    darker: '#16213e',
+                },
+                glass: {
+                    DEFAULT: 'rgba(255,255,255,0.1)',
+                    light: 'rgba(255,255,255,0.15)',
+                    border: 'rgba(255,255,255,0.2)',
+                },
+                success: {
+                    DEFAULT: '#4ADE80',
                 },
                 danger: {
-                    DEFAULT: '#dc2626'
+                    DEFAULT: '#dc2626',
+                    coral: '#FF6B6B',
                 },
                 text: {
-                    DEFAULT: "#eee",
-                }
+                    DEFAULT: '#FFFFFF',
+                    muted: 'rgba(255,255,255,0.7)',
+                },
+            },
+            backdropBlur: {
+                xs: '2px',
+            },
+            animation: {
+                'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                'gradient': 'gradient 15s ease infinite',
+            },
+            keyframes: {
+                gradient: {
+                    '0%, 100%': { backgroundPosition: '0% 50%' },
+                    '50%': { backgroundPosition: '100% 50%' },
+                },
             },
         },
     },
