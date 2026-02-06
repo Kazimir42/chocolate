@@ -6,6 +6,8 @@
 export const STORAGE_KEYS = {
   STEPS: 'steps',
   CYCLES_NUMBER: 'cycles_number',
+  PROFILES: 'profiles',
+  ACTIVE_PROFILE_ID: 'active_profile_id',
 };
 
 // Timer constants

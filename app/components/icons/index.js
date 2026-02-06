@@ -7,3 +7,4 @@ export { SkipIcon } from './SkipIcon';
 export { PreviousIcon } from './PreviousIcon';
 export { RestartIcon } from './RestartIcon';
 export { MenuIcon } from './MenuIcon';
+export { ProfileIcon } from './ProfileIcon';

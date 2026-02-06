@@ -14,7 +14,7 @@ export function CompletionScreen() {
           Bravo !
         </h1>
         <p className="text-xl text-white/80 mb-8">
-          C'est terminé !
+          C&apos;est terminé !
         </p>
         <Link
           href="/"

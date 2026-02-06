@@ -91,6 +91,13 @@ export function useSteps() {
     saveSteps(newSteps);
   }, [steps, saveSteps]);
 
+  // Load a full workout (steps + cycles) from a profile
+  const loadWorkout = useCallback((newSteps, newCycles) => {
+    saveSteps(newSteps);
+    setCyclesNumber(newCycles);
+    setStorageValue(STORAGE_KEYS.CYCLES_NUMBER, newCycles);
+  }, [saveSteps]);
+
   return {
     steps,
     cyclesNumber,
@@ -103,5 +110,6 @@ export function useSteps() {
     resetProgress,
     setStepInProgress,
     saveSteps,
+    loadWorkout,
   };
 }

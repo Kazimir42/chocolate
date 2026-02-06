@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useWorkout } from './hooks';
-import { StepDisplay, ProgressInfo, CompletionScreen, SettingsIcon, SkipIcon, PreviousIcon, RestartIcon, MenuIcon } from './components';
+import { useWorkout, useProfiles } from './hooks';
+import { StepDisplay, ProgressInfo, CompletionScreen, SettingsIcon, SkipIcon, PreviousIcon, RestartIcon, MenuIcon, ProfileIcon } from './components';
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { profiles, activeProfileId } = useProfiles();
+  const activeProfile = profiles.find((p) => p.id === activeProfileId);
 
   const {
     steps,
@@ -77,6 +79,15 @@ export default function Home() {
                   <SettingsIcon />
                   <span className="text-sm">Paramètres</span>
                 </Link>
+                <Link
+                  className="btn-glass p-3 flex items-center gap-2"
+                  href="/profiles"
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Profils"
+                >
+                  <ProfileIcon />
+                  <span className="text-sm">Profils</span>
+                </Link>
                 <button
                   className="btn-glass p-3 flex items-center gap-2"
                   onClick={(e) => {
@@ -122,6 +133,7 @@ export default function Home() {
             totalRounds={steps.length}
             currentCycle={currentCycle}
             totalCycles={cyclesNumber}
+            profileName={activeProfile?.name}
           />
         </div>
 
