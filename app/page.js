@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { useWorkout, useProfiles } from './hooks';
-import { StepDisplay, ProgressInfo, CompletionScreen, SettingsIcon, SkipIcon, PreviousIcon, RestartIcon, MenuIcon, ProfileIcon } from './components';
+import { StepDisplay, ProgressInfo, CompletionScreen, ListIcon, SkipIcon, PreviousIcon, RestartIcon } from './components';
 
 export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const { profiles, activeProfileId } = useProfiles();
   const activeProfile = profiles.find((p) => p.id === activeProfileId);
 
@@ -54,78 +52,27 @@ export default function Home() {
         }}
         aria-label={timer.isRunning ? 'Pause' : 'Démarrer'}
       >
-        {/* Header with settings and progress */}
+        {/* Header with actions and progress */}
         <div className="flex justify-between items-start p-4">
-          <div className="relative flex gap-2">
+          <div className="flex gap-0">
+            <Link
+              className="p-3 opacity-60"
+              href="/steps"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Programme"
+            >
+              <ListIcon />
+            </Link>
             <button
-              className="btn-glass p-3"
+              className="p-3 opacity-60"
               onClick={(e) => {
                 e.stopPropagation();
-                setMenuOpen(!menuOpen);
+                restartWorkout();
               }}
-              aria-label="Menu"
+              aria-label="Recommencer"
             >
-              <MenuIcon />
+              <RestartIcon />
             </button>
-
-            {menuOpen && (
-              <div className="absolute top-full left-0 mt-2 flex flex-col gap-2 glass p-2 z-10">
-                <Link
-                  className="btn-glass p-3 flex items-center gap-2"
-                  href="/steps"
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label="Paramètres"
-                >
-                  <SettingsIcon />
-                  <span className="text-sm">Paramètres</span>
-                </Link>
-                <Link
-                  className="btn-glass p-3 flex items-center gap-2"
-                  href="/profiles"
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label="Profils"
-                >
-                  <ProfileIcon />
-                  <span className="text-sm">Profils</span>
-                </Link>
-                <button
-                  className="btn-glass p-3 flex items-center gap-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    previousStep();
-                    setMenuOpen(false);
-                  }}
-                  aria-label="Précédent"
-                >
-                  <PreviousIcon />
-                  <span className="text-sm">Précédent</span>
-                </button>
-                <button
-                  className="btn-glass p-3 flex items-center gap-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    skipStep();
-                    setMenuOpen(false);
-                  }}
-                  aria-label="Passer"
-                >
-                  <SkipIcon />
-                  <span className="text-sm">Passer</span>
-                </button>
-                <button
-                  className="btn-glass p-3 flex items-center gap-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    restartWorkout();
-                    setMenuOpen(false);
-                  }}
-                  aria-label="Recommencer"
-                >
-                  <RestartIcon />
-                  <span className="text-sm">Recommencer</span>
-                </button>
-              </div>
-            )}
           </div>
 
           <ProgressInfo
@@ -147,11 +94,31 @@ export default function Home() {
           />
         </div>
 
-        {/* Start prompt */}
-        <div className="pb-4 text-center w-full">
+        {/* Bottom bar: previous / start prompt / skip */}
+        <div className="flex items-center justify-between px-4 pb-4">
+          <button
+            className="p-3 opacity-40"
+            onClick={(e) => {
+              e.stopPropagation();
+              previousStep();
+            }}
+            aria-label="Précédent"
+          >
+            <PreviousIcon />
+          </button>
           <p className={`font-light text-lg text-text-muted transition-opacity ${timer.isRunning ? 'opacity-0' : 'opacity-100'}`}>
             Appuyez pour démarrer
           </p>
+          <button
+            className="p-3 opacity-40"
+            onClick={(e) => {
+              e.stopPropagation();
+              skipStep();
+            }}
+            aria-label="Passer"
+          >
+            <SkipIcon />
+          </button>
         </div>
       </div>
 
