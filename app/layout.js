@@ -10,8 +10,7 @@ export const metadata = {
   keywords: ['nextjs', 'next14', 'pwa', 'next-pwa', 'minuteur', 'entraînement'],
   authors: [
     {
-      name: 'imvinojanv',
-      url: 'https://www.linkedin.com/in/imvinojanv/',
+      name: 'Kazimir42',
     },
   ],
   icons: [

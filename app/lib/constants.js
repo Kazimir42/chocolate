@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   CYCLES_NUMBER: 'cycles_number',
   PROFILES: 'profiles',
   ACTIVE_PROFILE_ID: 'active_profile_id',
+  SOUND_ENABLED: 'sound_enabled',
 };
 
 // Timer constants
@@ -15,9 +16,9 @@ export const TIMER_INTERVAL_MS = 1000;
 
 // Default values
 export const DEFAULT_STEP = {
-  name: 'new step',
-  duration: 60,
-  repetition: null,
+  name: 'Exercice',
+  duration: null,
+  repetition: 8,
   in_progress: false,
 };
 

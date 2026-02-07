@@ -1,11 +1,11 @@
 'use client';
 
-import { ArrowUpIcon, ArrowDownIcon, TrashIcon } from './icons';
+import { ArrowUpIcon, ArrowDownIcon, TrashIcon, CopyIcon } from './icons';
 
 /**
  * Card component for editing a workout step
  */
-export function StepCard({ step, onUpdate, onDelete, onMove }) {
+export function StepCard({ step, onUpdate, onDelete, onDuplicate, onMove, isFirst, isLast }) {
   const handleFieldChange = (field, value) => {
     let processedValue = value;
 
@@ -40,6 +40,8 @@ export function StepCard({ step, onUpdate, onDelete, onMove }) {
             id={`step-duration-${step.id}`}
             className="glass-input p-3 text-lg text-white text-center w-full"
             type="number"
+            min={0}
+            max={3600}
             value={step.duration ?? ''}
             onChange={(e) => handleFieldChange('duration', e.target.value)}
           />
@@ -52,6 +54,8 @@ export function StepCard({ step, onUpdate, onDelete, onMove }) {
             id={`step-repetition-${step.id}`}
             className="glass-input p-3 text-lg text-white text-center w-full"
             type="number"
+            min={0}
+            max={999}
             value={step.repetition ?? ''}
             onChange={(e) => handleFieldChange('repetition', e.target.value)}
           />
@@ -62,29 +66,41 @@ export function StepCard({ step, onUpdate, onDelete, onMove }) {
         <div className="flex flex-row gap-2">
           <button
             type="button"
-            className="btn-glass p-2"
+            className="btn-glass p-2 disabled:opacity-30"
             onClick={() => onMove('up', step.id)}
+            disabled={isFirst}
             aria-label="Monter l'étape"
           >
             <ArrowUpIcon />
           </button>
           <button
             type="button"
-            className="btn-glass p-2"
+            className="btn-glass p-2 disabled:opacity-30"
             onClick={() => onMove('down', step.id)}
+            disabled={isLast}
             aria-label="Descendre l'étape"
           >
             <ArrowDownIcon />
           </button>
         </div>
-        <button
-          type="button"
-          className="btn-glass p-2 text-danger-coral hover:bg-danger-coral/20 hover:border-danger-coral/50"
-          onClick={() => onDelete(step.id)}
-          aria-label="Supprimer l'étape"
-        >
-          <TrashIcon />
-        </button>
+        <div className="flex flex-row gap-2">
+          <button
+            type="button"
+            className="btn-glass p-2"
+            onClick={() => onDuplicate(step.id)}
+            aria-label="Dupliquer l'étape"
+          >
+            <CopyIcon />
+          </button>
+          <button
+            type="button"
+            className="btn-glass p-2 text-danger-coral hover:bg-danger-coral/20 hover:border-danger-coral/50"
+            onClick={() => onDelete(step.id)}
+            aria-label="Supprimer l'étape"
+          >
+            <TrashIcon />
+          </button>
+        </div>
       </div>
     </div>
   );

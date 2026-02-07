@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSteps, useProfiles } from '../hooks';
-import { StepCard, HomeIcon, TrashIcon, PencilIcon } from '../components';
+import { DEFAULT_CYCLES_NUMBER } from '../lib/constants';
+import { StepCard, ProfileModal, LoadingScreen, HomeIcon, TrashIcon, PencilIcon } from '../components';
 
 export default function StepsPage() {
   const {
@@ -12,6 +13,7 @@ export default function StepsPage() {
     isLoaded,
     addStep,
     updateStep,
+    duplicateStep,
     deleteStep,
     moveStep,
     updateCyclesNumber,
@@ -24,14 +26,12 @@ export default function StepsPage() {
     saveProfile,
     loadProfile,
     deleteProfile,
-    renameProfile,
+    updateProfile,
+    deselectProfile,
     syncActiveProfile,
   } = useProfiles();
 
-  const [showModal, setShowModal] = useState(false);
-  const [profileName, setProfileName] = useState('');
-  const [showRenameModal, setShowRenameModal] = useState(false);
-  const [renameName, setRenameName] = useState('');
+  const [profileModal, setProfileModal] = useState(null); // { mode: 'create' | 'edit', initialName? }
 
   // Auto-sync active profile when steps or cycles change
   const isFirstRender = useRef(true);
@@ -48,7 +48,11 @@ export default function StepsPage() {
 
   const handleSelectProfile = (e) => {
     const id = e.target.value;
-    if (!id) return;
+    if (!id) {
+      deselectProfile();
+      loadWorkout([], DEFAULT_CYCLES_NUMBER);
+      return;
+    }
     const profile = loadProfile(id);
     if (profile) {
       loadWorkout(profile.steps, profile.cyclesNumber);
@@ -57,12 +61,13 @@ export default function StepsPage() {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const handleSaveProfile = () => {
-    const name = profileName.trim();
-    if (!name) return;
-    saveProfile(name);
-    setProfileName('');
-    setShowModal(false);
+  const handleProfileModalConfirm = (name) => {
+    if (profileModal?.mode === 'create') {
+      saveProfile(name);
+    } else if (profileModal?.mode === 'edit' && activeProfileId) {
+      updateProfile(activeProfileId, name);
+    }
+    setProfileModal(null);
   };
 
   const handleDeleteActiveProfile = () => {
@@ -72,25 +77,8 @@ export default function StepsPage() {
     }
   };
 
-  const handleRenameStart = () => {
-    const active = profiles.find((p) => p.id === activeProfileId);
-    if (active) {
-      setRenameName(active.name);
-      setShowRenameModal(true);
-    }
-  };
-
-  const handleRenameConfirm = () => {
-    const name = renameName.trim();
-    if (name && activeProfileId) {
-      renameProfile(activeProfileId, name);
-    }
-    setShowRenameModal(false);
-    setRenameName('');
-  };
-
   if (!isLoaded) {
-    return null;
+    return <LoadingScreen />;
   }
 
   return (
@@ -118,7 +106,7 @@ export default function StepsPage() {
             <button
               type="button"
               className="btn-glass p-3 flex items-center justify-center text-orange-light font-bold text-xl shrink-0"
-              onClick={() => setShowModal(true)}
+              onClick={() => setProfileModal({ mode: 'create' })}
               aria-label="Créer un profil"
             >
               +
@@ -140,8 +128,11 @@ export default function StepsPage() {
                 <button
                   type="button"
                   className="btn-glass p-3 flex items-center justify-center text-text-muted"
-                  onClick={handleRenameStart}
-                  aria-label="Renommer le profil"
+                  onClick={() => {
+                    const active = profiles.find((p) => p.id === activeProfileId);
+                    if (active) setProfileModal({ mode: 'edit', initialName: active.name });
+                  }}
+                  aria-label="Modifier le profil"
                 >
                   <PencilIcon className="size-6" />
                 </button>
@@ -181,23 +172,33 @@ export default function StepsPage() {
       <section className="w-full max-w-md">
         <h2 className="font-bold text-xl pb-4 text-center text-orange-light">Étapes</h2>
         <div className="flex flex-col gap-4">
-          {steps.map((step) => (
+          {steps.map((step, index) => (
             <StepCard
               key={step.id}
               step={step}
               onUpdate={updateStep}
+              onDuplicate={duplicateStep}
               onDelete={deleteStep}
               onMove={moveStep}
+              isFirst={index === 0}
+              isLast={index === steps.length - 1}
             />
           ))}
         </div>
-        <div className="mt-6 text-center">
+        <div className="mt-6 flex justify-center gap-3">
           <button
             type="button"
             className="btn-orange text-white"
-            onClick={addStep}
+            onClick={() => addStep()}
           >
             + Nouvelle étape
+          </button>
+          <button
+            type="button"
+            className="btn-glass text-white"
+            onClick={() => addStep({ name: 'Repos', duration: 60 })}
+          >
+            + Repos
           </button>
         </div>
       </section>
@@ -230,82 +231,16 @@ export default function StepsPage() {
         </div>
       )}
 
-      {/* Rename profile modal */}
-      {showRenameModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="glass-card p-6 w-full max-w-sm flex flex-col gap-4">
-            <h2 className="font-bold text-xl text-center">Renommer le profil</h2>
-            <input
-              className="glass-input p-3 text-white w-full"
-              type="text"
-              placeholder="Nouveau nom"
-              value={renameName}
-              onChange={(e) => setRenameName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleRenameConfirm();
-              }}
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="btn-glass p-3 flex-1"
-                onClick={() => {
-                  setShowRenameModal(false);
-                  setRenameName('');
-                }}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                className="btn-orange text-white flex-1"
-                onClick={handleRenameConfirm}
-              >
-                Renommer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create profile modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="glass-card p-6 w-full max-w-sm flex flex-col gap-4">
-            <h2 className="font-bold text-xl text-center">Nouveau profil</h2>
-            <input
-              className="glass-input p-3 text-white w-full"
-              type="text"
-              placeholder="Ex: Push day"
-              value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveProfile();
-              }}
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="btn-glass p-3 flex-1"
-                onClick={() => {
-                  setShowModal(false);
-                  setProfileName('');
-                }}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                className="btn-orange text-white flex-1"
-                onClick={handleSaveProfile}
-              >
-                Sauvegarder
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Create / Edit profile modal */}
+      {profileModal && (
+        <ProfileModal
+          title={profileModal.mode === 'create' ? 'Nouveau profil' : 'Modifier le profil'}
+          placeholder={profileModal.mode === 'create' ? 'Ex: Push day' : 'Nouveau nom'}
+          confirmLabel={profileModal.mode === 'create' ? 'Sauvegarder' : 'Modifier'}
+          initialName={profileModal.initialName || ''}
+          onConfirm={handleProfileModalConfirm}
+          onClose={() => setProfileModal(null)}
+        />
       )}
     </main>
   );

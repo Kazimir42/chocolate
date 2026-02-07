@@ -7,3 +7,6 @@ export { PreviousIcon } from './PreviousIcon';
 export { RestartIcon } from './RestartIcon';
 export { PencilIcon } from './PencilIcon';
 export { ListIcon } from './ListIcon';
+export { CopyIcon } from './CopyIcon';
+export { SoundOnIcon } from './SoundOnIcon';
+export { SoundOffIcon } from './SoundOffIcon';

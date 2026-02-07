@@ -20,7 +20,7 @@ export function useWorkout() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [shouldAutoStart, setShouldAutoStart] = useState(false);
 
-  const { play: playSound } = useSound('/sounds/1081.mp3');
+  const { play: playSound, soundEnabled, toggleSound } = useSound('/sounds/1081.mp3');
   useWakeLock();
 
   // Find current and next step from steps array
@@ -173,6 +173,8 @@ export function useWorkout() {
     isEnded,
     isLoaded,
     timer,
+    soundEnabled,
+    toggleSound,
     handleTimerClick,
     skipStep,
     previousStep,

@@ -67,14 +67,20 @@ export function useProfiles() {
     }
   }, [profiles, activeProfileId]);
 
-  // Rename a profile
-  const renameProfile = useCallback((id, newName) => {
+  // Update a profile
+  const updateProfile = useCallback((id, newName) => {
     const updated = profiles.map((p) =>
       p.id === id ? { ...p, name: newName } : p
     );
     setProfiles(updated);
     setStorageItem(STORAGE_KEYS.PROFILES, updated);
   }, [profiles]);
+
+  // Deselect the active profile
+  const deselectProfile = useCallback(() => {
+    setActiveProfileId(null);
+    setStorageItem(STORAGE_KEYS.ACTIVE_PROFILE_ID, null);
+  }, []);
 
   // Sync the active profile with current workout data
   const syncActiveProfile = useCallback((steps, cyclesNumber) => {
@@ -92,7 +98,8 @@ export function useProfiles() {
     saveProfile,
     loadProfile,
     deleteProfile,
-    renameProfile,
+    updateProfile,
+    deselectProfile,
     syncActiveProfile,
   };
 }

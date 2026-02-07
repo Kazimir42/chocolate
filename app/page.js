@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useWorkout, useProfiles } from './hooks';
-import { StepDisplay, ProgressInfo, CompletionScreen, ListIcon, SkipIcon, PreviousIcon, RestartIcon } from './components';
+import { StepDisplay, ProgressInfo, CompletionScreen, LoadingScreen, ListIcon, SkipIcon, PreviousIcon, RestartIcon, SoundOnIcon, SoundOffIcon } from './components';
 
 export default function Home() {
   const { profiles, activeProfileId } = useProfiles();
@@ -18,6 +18,8 @@ export default function Home() {
     isEnded,
     isLoaded,
     timer,
+    soundEnabled,
+    toggleSound,
     handleTimerClick,
     skipStep,
     previousStep,
@@ -25,7 +27,18 @@ export default function Home() {
   } = useWorkout();
 
   if (!isLoaded) {
-    return null;
+    return <LoadingScreen />;
+  }
+
+  if (steps.length === 0) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-main p-4 gap-6 text-center">
+        <p className="text-xl text-text-muted">Aucun exercice défini</p>
+        <Link href="/steps" className="btn-orange text-white">
+          Configurer mon programme
+        </Link>
+      </main>
+    );
   }
 
   if (isEnded) {
@@ -72,6 +85,16 @@ export default function Home() {
               aria-label="Recommencer"
             >
               <RestartIcon />
+            </button>
+            <button
+              className="p-3 opacity-60"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSound();
+              }}
+              aria-label={soundEnabled ? 'Couper le son' : 'Activer le son'}
+            >
+              {soundEnabled ? <SoundOnIcon /> : <SoundOffIcon />}
             </button>
           </div>
 

@@ -37,9 +37,9 @@ export function useSteps() {
   }, []);
 
   // Add a new step
-  const addStep = useCallback(() => {
+  const addStep = useCallback((overrides = {}) => {
     const newId = steps.length > 0 ? Math.max(...steps.map((s) => s.id)) + 1 : 1;
-    const newStep = { ...DEFAULT_STEP, id: newId };
+    const newStep = { ...DEFAULT_STEP, ...overrides, id: newId };
     saveSteps([...steps, newStep]);
   }, [steps, saveSteps]);
 
@@ -48,6 +48,17 @@ export function useSteps() {
     const newSteps = steps.map((step) =>
       step.id === id ? { ...step, [field]: value } : step
     );
+    saveSteps(newSteps);
+  }, [steps, saveSteps]);
+
+  // Duplicate a step (insert copy right after it)
+  const duplicateStep = useCallback((id) => {
+    const index = steps.findIndex((step) => step.id === id);
+    if (index === -1) return;
+    const newId = steps.length > 0 ? Math.max(...steps.map((s) => s.id)) + 1 : 1;
+    const copy = { ...steps[index], id: newId, in_progress: false };
+    const newSteps = [...steps];
+    newSteps.splice(index + 1, 0, copy);
     saveSteps(newSteps);
   }, [steps, saveSteps]);
 
@@ -104,6 +115,7 @@ export function useSteps() {
     isLoaded,
     addStep,
     updateStep,
+    duplicateStep,
     deleteStep,
     moveStep,
     updateCyclesNumber,
