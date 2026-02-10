@@ -38,8 +38,6 @@ export function useWorkout() {
 
   // Handle round completion
   const handleRoundComplete = useCallback(() => {
-    playSound();
-
     if (nextStep) {
       // Move to next step
       const newSteps = steps.map((step) => ({
@@ -67,11 +65,17 @@ export function useWorkout() {
         setShouldAutoStart(true);
       }
     }
-  }, [nextStep, steps, currentCycle, cyclesNumber, playSound]);
+  }, [nextStep, steps, currentCycle, cyclesNumber]);
+
+  // Play sound then complete round (only for timer-based completion)
+  const handleTimerComplete = useCallback(() => {
+    playSound();
+    handleRoundComplete();
+  }, [playSound, handleRoundComplete]);
 
   const timer = useTimer({
     targetDuration: currentStep?.duration || null,
-    onComplete: handleRoundComplete,
+    onComplete: handleTimerComplete,
   });
 
   // Load data from localStorage
