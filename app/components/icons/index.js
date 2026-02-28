@@ -1,6 +1,4 @@
 export { HomeIcon } from './HomeIcon';
-export { ArrowUpIcon } from './ArrowUpIcon';
-export { ArrowDownIcon } from './ArrowDownIcon';
 export { TrashIcon } from './TrashIcon';
 export { SkipIcon } from './SkipIcon';
 export { PreviousIcon } from './PreviousIcon';

@@ -53,17 +53,10 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center bg-gradient-main">
       {/* Current Step Section */}
-      <div
-        className="h-[70vh] w-full cursor-pointer relative transition duration-300 flex flex-col"
+      <button
+        type="button"
+        className="h-[70vh] w-full cursor-pointer relative transition duration-300 flex flex-col text-left appearance-none bg-transparent border-none p-0"
         onClick={handleTimerClick}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleTimerClick();
-          }
-        }}
         aria-label={timer.isRunning ? 'Pause' : 'Démarrer'}
       >
         {/* Header with actions and progress */}
@@ -144,7 +137,7 @@ export default function Home() {
             <SkipIcon />
           </button>
         </div>
-      </div>
+      </button>
 
       {/* Next Step Section */}
       <div className="h-[30vh] next-section w-full flex flex-col">

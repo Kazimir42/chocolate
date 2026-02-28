@@ -16,21 +16,19 @@ export function useSound(src) {
   useEffect(() => {
     const saved = getStorageItem(STORAGE_KEYS.SOUND_ENABLED, true);
     setEnabled(saved);
-  }, []);
+    // Preload audio file to avoid delay on first play
+    audioRef.current = new Audio(src);
+    audioRef.current.preload = 'auto';
+  }, [src]);
 
   const play = useCallback(() => {
-    if (!enabled) return;
+    if (!enabled || !audioRef.current) return;
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio(src);
-    }
-
-    // Reset to start if already playing
     audioRef.current.currentTime = 0;
     audioRef.current.play().catch(() => {
       // Autoplay might be blocked by browser
     });
-  }, [src, enabled]);
+  }, [enabled]);
 
   const toggleSound = useCallback(() => {
     const newValue = !enabled;

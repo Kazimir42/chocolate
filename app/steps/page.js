@@ -260,7 +260,7 @@ export default function StepsPage() {
 
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-label="Supprimer le profil">
           <div className="glass-card p-6 w-full max-w-sm flex flex-col gap-4">
             <h2 className="font-bold text-xl text-center">Supprimer le profil</h2>
             <p className="text-center text-text-muted">

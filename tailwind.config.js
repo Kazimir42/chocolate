@@ -34,7 +34,7 @@ module.exports = {
                 },
                 text: {
                     DEFAULT: '#FFFFFF',
-                    muted: 'rgba(255,255,255,0.7)',
+                    muted: 'rgba(255,255,255,0.85)',
                 },
             },
             backdropBlur: {
