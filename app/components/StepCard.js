@@ -1,11 +1,11 @@
 'use client';
 
-import { ArrowUpIcon, ArrowDownIcon, TrashIcon, CopyIcon } from './icons';
+import { DragHandleIcon, TrashIcon, CopyIcon } from './icons';
 
 /**
  * Card component for editing a workout step
  */
-export function StepCard({ step, onUpdate, onDelete, onDuplicate, onMove, isFirst, isLast }) {
+export function StepCard({ step, onUpdate, onDelete, onDuplicate, dragHandleProps }) {
   const handleFieldChange = (field, value) => {
     let processedValue = value;
 
@@ -18,6 +18,20 @@ export function StepCard({ step, onUpdate, onDelete, onDuplicate, onMove, isFirs
 
   return (
     <div className="glass-card p-4 flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="cursor-grab touch-none p-1 text-text-muted"
+          aria-label="Réordonner"
+          {...dragHandleProps}
+        >
+          <DragHandleIcon />
+        </button>
+        <span className="text-xs font-bold uppercase tracking-wide text-blue-400 bg-blue-400/20 px-2 py-1 rounded">
+          Étape
+        </span>
+      </div>
+
       <div className="flex flex-col gap-1">
         <label className="font-semibold text-sm text-text-muted uppercase tracking-wide" htmlFor={`step-name-${step.id}`}>
           Nom
@@ -62,27 +76,7 @@ export function StepCard({ step, onUpdate, onDelete, onDuplicate, onMove, isFirs
         </div>
       </div>
 
-      <div className="flex flex-row justify-between pt-2">
-        <div className="flex flex-row gap-2">
-          <button
-            type="button"
-            className="btn-glass p-2 disabled:opacity-30"
-            onClick={() => onMove('up', step.id)}
-            disabled={isFirst}
-            aria-label="Monter l'étape"
-          >
-            <ArrowUpIcon />
-          </button>
-          <button
-            type="button"
-            className="btn-glass p-2 disabled:opacity-30"
-            onClick={() => onMove('down', step.id)}
-            disabled={isLast}
-            aria-label="Descendre l'étape"
-          >
-            <ArrowDownIcon />
-          </button>
-        </div>
+      <div className="flex flex-row justify-end pt-2">
         <div className="flex flex-row gap-2">
           <button
             type="button"

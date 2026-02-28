@@ -1,11 +1,11 @@
 'use client';
 
-import { ArrowUpIcon, ArrowDownIcon, TrashIcon } from './icons';
+import { DragHandleIcon, TrashIcon } from './icons';
 
 /**
  * Compact editor row for a sub-exercise inside a superset
  */
-export function SupersetExerciseRow({ exercise, supersetId, index, onUpdate, onMove, onRemove, isFirst, isLast, canRemove }) {
+export function SupersetExerciseRow({ exercise, supersetId, onUpdate, onRemove, canRemove, dragHandleProps }) {
   const handleFieldChange = (field, value) => {
     let processedValue = value;
     if (field === 'duration' || field === 'repetition') {
@@ -16,26 +16,14 @@ export function SupersetExerciseRow({ exercise, supersetId, index, onUpdate, onM
 
   return (
     <div className="flex items-center gap-2 p-3 rounded-lg bg-white/5">
-      <div className="flex flex-col shrink-0">
-        <button
-          type="button"
-          className="p-0.5 text-text-muted disabled:opacity-20"
-          onClick={() => onMove(supersetId, exercise.id, 'up')}
-          disabled={isFirst}
-          aria-label="Monter"
-        >
-          <ArrowUpIcon className="size-3" />
-        </button>
-        <button
-          type="button"
-          className="p-0.5 text-text-muted disabled:opacity-20"
-          onClick={() => onMove(supersetId, exercise.id, 'down')}
-          disabled={isLast}
-          aria-label="Descendre"
-        >
-          <ArrowDownIcon className="size-3" />
-        </button>
-      </div>
+      <button
+        type="button"
+        className="shrink-0 cursor-grab touch-none p-0.5 text-text-muted"
+        aria-label="Réordonner"
+        {...dragHandleProps}
+      >
+        <DragHandleIcon className="size-4" />
+      </button>
       <input
         className="glass-input p-2 text-sm text-white flex-1 min-w-0"
         type="text"

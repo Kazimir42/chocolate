@@ -1,6 +1,10 @@
 'use client';
 
-import { ArrowUpIcon, ArrowDownIcon, TrashIcon, CopyIcon } from './icons';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
+import { DragHandleIcon, TrashIcon, CopyIcon } from './icons';
+import { SortableItem } from './SortableItem';
 import { SupersetExerciseRow } from './SupersetExerciseRow';
 
 /**
@@ -11,20 +15,40 @@ export function SupersetCard({
   onUpdateField,
   onAddExercise,
   onUpdateExercise,
-  onMoveExercise,
+  onReorderExercises,
   onRemoveExercise,
   onDuplicate,
   onDelete,
-  onMove,
-  isFirst,
-  isLast,
+  dragHandleProps,
 }) {
   const exercises = step.exercises || [];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = exercises.findIndex((ex) => ex.id === active.id);
+    const newIndex = exercises.findIndex((ex) => ex.id === over.id);
+    if (oldIndex !== -1 && newIndex !== -1) {
+      onReorderExercises(step.id, oldIndex, newIndex);
+    }
+  };
 
   return (
     <div className="glass-card p-4 flex flex-col gap-4 border-l-4 border-orange">
       {/* Header */}
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="shrink-0 cursor-grab touch-none p-1 text-text-muted"
+          aria-label="Réordonner"
+          {...dragHandleProps}
+        >
+          <DragHandleIcon />
+        </button>
         <span className="text-xs font-bold uppercase tracking-wide text-orange bg-orange/20 px-2 py-1 rounded">
           Superset
         </span>
@@ -60,25 +84,34 @@ export function SupersetCard({
         />
       </div>
 
-      {/* Sub-exercises */}
+      {/* Sub-exercises with nested DndContext */}
       <div className="flex flex-col gap-2">
         <label className="font-semibold text-sm text-text-muted uppercase tracking-wide">
           Exercices
         </label>
-        {exercises.map((ex, i) => (
-          <SupersetExerciseRow
-            key={ex.id}
-            exercise={ex}
-            supersetId={step.id}
-            index={i}
-            onUpdate={onUpdateExercise}
-            onMove={onMoveExercise}
-            onRemove={onRemoveExercise}
-            isFirst={i === 0}
-            isLast={i === exercises.length - 1}
-            canRemove={exercises.length > 1}
-          />
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={exercises.map((ex) => ex.id)} strategy={verticalListSortingStrategy}>
+            {exercises.map((ex) => (
+              <SortableItem key={ex.id} id={ex.id}>
+                {(exDragHandleProps) => (
+                  <SupersetExerciseRow
+                    exercise={ex}
+                    supersetId={step.id}
+                    onUpdate={onUpdateExercise}
+                    onRemove={onRemoveExercise}
+                    canRemove={exercises.length > 1}
+                    dragHandleProps={exDragHandleProps}
+                  />
+                )}
+              </SortableItem>
+            ))}
+          </SortableContext>
+        </DndContext>
         <div className="flex gap-2">
           <button
             type="button"
@@ -98,27 +131,7 @@ export function SupersetCard({
       </div>
 
       {/* Actions */}
-      <div className="flex flex-row justify-between pt-2">
-        <div className="flex flex-row gap-2">
-          <button
-            type="button"
-            className="btn-glass p-2 disabled:opacity-30"
-            onClick={() => onMove('up', step.id)}
-            disabled={isFirst}
-            aria-label="Monter l'étape"
-          >
-            <ArrowUpIcon />
-          </button>
-          <button
-            type="button"
-            className="btn-glass p-2 disabled:opacity-30"
-            onClick={() => onMove('down', step.id)}
-            disabled={isLast}
-            aria-label="Descendre l'étape"
-          >
-            <ArrowDownIcon />
-          </button>
-        </div>
+      <div className="flex flex-row justify-end pt-2">
         <div className="flex flex-row gap-2">
           <button
             type="button"

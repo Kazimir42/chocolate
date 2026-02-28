@@ -110,22 +110,14 @@ export function useSteps() {
     saveSteps(newSteps);
   }, [steps, saveSteps]);
 
-  // Move a sub-exercise up or down inside a superset
-  const moveSupersetExercise = useCallback((supersetId, exerciseId, direction) => {
+  // Reorder sub-exercises inside a superset (index-based for dnd-kit)
+  const reorderSupersetExercises = useCallback((supersetId, oldIndex, newIndex) => {
     const newSteps = steps.map((step) => {
       if (step.id !== supersetId || step.type !== STEP_TYPES.SUPERSET) return step;
       const exercises = [...step.exercises];
-      const index = exercises.findIndex((ex) => ex.id === exerciseId);
-      if (index === -1) return step;
-
-      if (direction === 'up' && index > 0) {
-        [exercises[index - 1], exercises[index]] = [exercises[index], exercises[index - 1]];
-      } else if (direction === 'down' && index < exercises.length - 1) {
-        [exercises[index + 1], exercises[index]] = [exercises[index], exercises[index + 1]];
-      } else {
-        return step;
-      }
-
+      if (oldIndex < 0 || oldIndex >= exercises.length || newIndex < 0 || newIndex >= exercises.length) return step;
+      const [moved] = exercises.splice(oldIndex, 1);
+      exercises.splice(newIndex, 0, moved);
       return { ...step, exercises };
     });
     saveSteps(newSteps);
@@ -173,21 +165,12 @@ export function useSteps() {
     saveSteps(newSteps);
   }, [steps, saveSteps]);
 
-  // Move a step up or down
-  const moveStep = useCallback((direction, id) => {
-    const index = steps.findIndex((step) => step.id === id);
-    if (index === -1) return;
-
+  // Reorder top-level steps (index-based for dnd-kit)
+  const reorderSteps = useCallback((oldIndex, newIndex) => {
     const newSteps = [...steps];
-
-    if (direction === 'up' && index > 0) {
-      [newSteps[index - 1], newSteps[index]] = [newSteps[index], newSteps[index - 1]];
-    } else if (direction === 'down' && index < newSteps.length - 1) {
-      [newSteps[index + 1], newSteps[index]] = [newSteps[index], newSteps[index + 1]];
-    } else {
-      return;
-    }
-
+    if (oldIndex < 0 || oldIndex >= newSteps.length || newIndex < 0 || newIndex >= newSteps.length) return;
+    const [moved] = newSteps.splice(oldIndex, 1);
+    newSteps.splice(newIndex, 0, moved);
     saveSteps(newSteps);
   }, [steps, saveSteps]);
 
@@ -224,11 +207,11 @@ export function useSteps() {
     updateSupersetField,
     addSupersetExercise,
     updateSupersetExercise,
-    moveSupersetExercise,
+    reorderSupersetExercises,
     removeSupersetExercise,
     duplicateStep,
     deleteStep,
-    moveStep,
+    reorderSteps,
     updateCyclesNumber,
     resetProgress,
     setStepInProgress,

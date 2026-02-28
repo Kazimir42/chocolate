@@ -10,3 +10,4 @@ export { ListIcon } from './ListIcon';
 export { CopyIcon } from './CopyIcon';
 export { SoundOnIcon } from './SoundOnIcon';
 export { SoundOffIcon } from './SoundOffIcon';
+export { DragHandleIcon } from './DragHandleIcon';

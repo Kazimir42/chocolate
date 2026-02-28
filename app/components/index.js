@@ -6,4 +6,5 @@ export { SupersetCard } from './SupersetCard';
 export { SupersetExerciseRow } from './SupersetExerciseRow';
 export { LoadingScreen } from './LoadingScreen';
 export { ProfileModal } from './ProfileModal';
+export { SortableItem } from './SortableItem';
 export * from './icons';

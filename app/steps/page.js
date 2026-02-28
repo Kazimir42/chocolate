@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
 import { useSteps, useProfiles } from '../hooks';
 import { DEFAULT_CYCLES_NUMBER, STEP_TYPES } from '../lib/constants';
-import { StepCard, SupersetCard, ProfileModal, LoadingScreen, HomeIcon, TrashIcon, PencilIcon } from '../components';
+import { StepCard, SupersetCard, SortableItem, ProfileModal, LoadingScreen, HomeIcon, TrashIcon, PencilIcon } from '../components';
 
 export default function StepsPage() {
   const {
@@ -17,11 +20,11 @@ export default function StepsPage() {
     updateSupersetField,
     addSupersetExercise,
     updateSupersetExercise,
-    moveSupersetExercise,
+    reorderSupersetExercises,
     removeSupersetExercise,
     duplicateStep,
     deleteStep,
-    moveStep,
+    reorderSteps,
     updateCyclesNumber,
     loadWorkout,
   } = useSteps();
@@ -80,6 +83,21 @@ export default function StepsPage() {
     if (activeProfileId) {
       deleteProfile(activeProfileId);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  // Top-level drag & drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = steps.findIndex((s) => s.id === active.id);
+    const newIndex = steps.findIndex((s) => s.id === over.id);
+    if (oldIndex !== -1 && newIndex !== -1) {
+      reorderSteps(oldIndex, newIndex);
     }
   };
 
@@ -177,37 +195,44 @@ export default function StepsPage() {
       {/* Steps Configuration */}
       <section className="w-full max-w-md">
         <h2 className="font-bold text-xl pb-4 text-center text-orange-light">Étapes</h2>
-        <div className="flex flex-col gap-4">
-          {steps.map((step, index) =>
-            step.type === STEP_TYPES.SUPERSET ? (
-              <SupersetCard
-                key={step.id}
-                step={step}
-                onUpdateField={updateSupersetField}
-                onAddExercise={addSupersetExercise}
-                onUpdateExercise={updateSupersetExercise}
-                onMoveExercise={moveSupersetExercise}
-                onRemoveExercise={removeSupersetExercise}
-                onDuplicate={duplicateStep}
-                onDelete={deleteStep}
-                onMove={moveStep}
-                isFirst={index === 0}
-                isLast={index === steps.length - 1}
-              />
-            ) : (
-              <StepCard
-                key={step.id}
-                step={step}
-                onUpdate={updateStep}
-                onDuplicate={duplicateStep}
-                onDelete={deleteStep}
-                onMove={moveStep}
-                isFirst={index === 0}
-                isLast={index === steps.length - 1}
-              />
-            )
-          )}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-4">
+              {steps.map((step) =>
+                <SortableItem key={step.id} id={step.id}>
+                  {(dragHandleProps) =>
+                    step.type === STEP_TYPES.SUPERSET ? (
+                      <SupersetCard
+                        step={step}
+                        onUpdateField={updateSupersetField}
+                        onAddExercise={addSupersetExercise}
+                        onUpdateExercise={updateSupersetExercise}
+                        onReorderExercises={reorderSupersetExercises}
+                        onRemoveExercise={removeSupersetExercise}
+                        onDuplicate={duplicateStep}
+                        onDelete={deleteStep}
+                        dragHandleProps={dragHandleProps}
+                      />
+                    ) : (
+                      <StepCard
+                        step={step}
+                        onUpdate={updateStep}
+                        onDuplicate={duplicateStep}
+                        onDelete={deleteStep}
+                        dragHandleProps={dragHandleProps}
+                      />
+                    )
+                  }
+                </SortableItem>
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
         <div className="mt-6 flex justify-center gap-3">
           <button
             type="button"
