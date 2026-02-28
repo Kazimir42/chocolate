@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSteps, useProfiles } from '../hooks';
-import { DEFAULT_CYCLES_NUMBER } from '../lib/constants';
-import { StepCard, ProfileModal, LoadingScreen, HomeIcon, TrashIcon, PencilIcon } from '../components';
+import { DEFAULT_CYCLES_NUMBER, STEP_TYPES } from '../lib/constants';
+import { StepCard, SupersetCard, ProfileModal, LoadingScreen, HomeIcon, TrashIcon, PencilIcon } from '../components';
 
 export default function StepsPage() {
   const {
@@ -12,7 +12,13 @@ export default function StepsPage() {
     cyclesNumber,
     isLoaded,
     addStep,
+    addSuperset,
     updateStep,
+    updateSupersetField,
+    addSupersetExercise,
+    updateSupersetExercise,
+    moveSupersetExercise,
+    removeSupersetExercise,
     duplicateStep,
     deleteStep,
     moveStep,
@@ -172,18 +178,35 @@ export default function StepsPage() {
       <section className="w-full max-w-md">
         <h2 className="font-bold text-xl pb-4 text-center text-orange-light">Étapes</h2>
         <div className="flex flex-col gap-4">
-          {steps.map((step, index) => (
-            <StepCard
-              key={step.id}
-              step={step}
-              onUpdate={updateStep}
-              onDuplicate={duplicateStep}
-              onDelete={deleteStep}
-              onMove={moveStep}
-              isFirst={index === 0}
-              isLast={index === steps.length - 1}
-            />
-          ))}
+          {steps.map((step, index) =>
+            step.type === STEP_TYPES.SUPERSET ? (
+              <SupersetCard
+                key={step.id}
+                step={step}
+                onUpdateField={updateSupersetField}
+                onAddExercise={addSupersetExercise}
+                onUpdateExercise={updateSupersetExercise}
+                onMoveExercise={moveSupersetExercise}
+                onRemoveExercise={removeSupersetExercise}
+                onDuplicate={duplicateStep}
+                onDelete={deleteStep}
+                onMove={moveStep}
+                isFirst={index === 0}
+                isLast={index === steps.length - 1}
+              />
+            ) : (
+              <StepCard
+                key={step.id}
+                step={step}
+                onUpdate={updateStep}
+                onDuplicate={duplicateStep}
+                onDelete={deleteStep}
+                onMove={moveStep}
+                isFirst={index === 0}
+                isLast={index === steps.length - 1}
+              />
+            )
+          )}
         </div>
         <div className="mt-6 flex justify-center gap-3">
           <button
@@ -199,6 +222,13 @@ export default function StepsPage() {
             onClick={() => addStep({ name: 'Repos', duration: 60 })}
           >
             + Repos
+          </button>
+          <button
+            type="button"
+            className="btn-glass text-orange border-orange/30"
+            onClick={addSuperset}
+          >
+            + Superset
           </button>
         </div>
       </section>

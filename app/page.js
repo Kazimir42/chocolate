@@ -10,6 +10,7 @@ export default function Home() {
 
   const {
     steps,
+    totalSteps,
     currentStep,
     nextStep,
     currentCycle,
@@ -100,7 +101,7 @@ export default function Home() {
 
           <ProgressInfo
             currentRound={currentRound}
-            totalRounds={steps.length}
+            totalRounds={totalSteps}
             currentCycle={currentCycle}
             totalCycles={cyclesNumber}
             profileName={activeProfile?.name}

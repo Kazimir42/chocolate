@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { STORAGE_KEYS, DEFAULT_CYCLES_NUMBER } from '../lib/constants';
-import { getStorageItem, getStorageNumber, setStorageItem } from '../lib/storage';
+import { getStorageItem, getStorageNumber } from '../lib/storage';
+import { flattenSteps, migrateSteps } from '../lib/flattenSteps';
 import { useTimer } from './useTimer';
 import { useSound } from './useSound';
 import { useWakeLock } from './useWakeLock';
@@ -14,8 +15,8 @@ import { useWakeLock } from './useWakeLock';
 export function useWorkout() {
   const [steps, setSteps] = useState([]);
   const [cyclesNumber, setCyclesNumber] = useState(DEFAULT_CYCLES_NUMBER);
+  const [currentExecIndex, setCurrentExecIndex] = useState(0);
   const [currentCycle, setCurrentCycle] = useState(1);
-  const [currentRound, setCurrentRound] = useState(1);
   const [isEnded, setIsEnded] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [shouldAutoStart, setShouldAutoStart] = useState(false);
@@ -23,49 +24,32 @@ export function useWorkout() {
   const { play: playSound, soundEnabled, toggleSound } = useSound('/sounds/1081.mp3');
   useWakeLock();
 
-  // Find current and next step from steps array
-  const { currentStep, nextStep, currentStepIndex } = useMemo(() => {
-    const index = steps.findIndex((step) => step.in_progress);
-    const current = index !== -1 ? steps[index] : (steps.length > 0 ? steps[0] : null);
-    const next = index !== -1 ? (steps[index + 1] || null) : (steps.length > 1 ? steps[1] : null);
+  // Flatten steps for execution (supersets → individual exercises + rests)
+  const executionSteps = useMemo(() => flattenSteps(steps), [steps]);
+  const totalSteps = executionSteps.length;
 
-    return {
-      currentStep: current,
-      nextStep: next,
-      currentStepIndex: index !== -1 ? index : 0,
-    };
-  }, [steps]);
+  // Derive current and next step from execution index
+  const currentStep = executionSteps[currentExecIndex] || null;
+  const nextStep = executionSteps[currentExecIndex + 1] || null;
+  const currentRound = currentExecIndex + 1;
 
   // Handle round completion
   const handleRoundComplete = useCallback(() => {
-    if (nextStep) {
+    if (currentExecIndex < totalSteps - 1) {
       // Move to next step
-      const newSteps = steps.map((step) => ({
-        ...step,
-        in_progress: step.id === nextStep.id,
-      }));
-      setSteps(newSteps);
-      setStorageItem(STORAGE_KEYS.STEPS, newSteps);
-      setCurrentRound((prev) => prev + 1);
+      setCurrentExecIndex((prev) => prev + 1);
       setShouldAutoStart(true);
     } else {
       // End of cycle
-      const newSteps = steps.map((step, index) => ({
-        ...step,
-        in_progress: index === 0,
-      }));
-      setSteps(newSteps);
-      setStorageItem(STORAGE_KEYS.STEPS, newSteps);
-      setCurrentRound(1);
-
       if (currentCycle >= cyclesNumber) {
         setIsEnded(true);
       } else {
+        setCurrentExecIndex(0);
         setCurrentCycle((prev) => prev + 1);
         setShouldAutoStart(true);
       }
     }
-  }, [nextStep, steps, currentCycle, cyclesNumber]);
+  }, [currentExecIndex, totalSteps, currentCycle, cyclesNumber]);
 
   // Play sound then complete round (only for timer-based completion)
   const handleTimerComplete = useCallback(() => {
@@ -83,15 +67,9 @@ export function useWorkout() {
     const savedSteps = getStorageItem(STORAGE_KEYS.STEPS, []);
     const savedCycles = getStorageNumber(STORAGE_KEYS.CYCLES_NUMBER, DEFAULT_CYCLES_NUMBER);
 
-    // Reset all steps to not in progress, then set first as in progress
-    const resetSteps = savedSteps.map((step, index) => ({
-      ...step,
-      in_progress: index === 0,
-    }));
-
-    setSteps(resetSteps);
+    setSteps(migrateSteps(savedSteps));
     setCyclesNumber(savedCycles);
-    setStorageItem(STORAGE_KEYS.STEPS, resetSteps);
+    setCurrentExecIndex(0);
     setIsLoaded(true);
   }, []);
 
@@ -129,46 +107,26 @@ export function useWorkout() {
   const previousStep = useCallback(() => {
     timer.reset();
 
-    if (currentStepIndex > 0) {
-      // Go to previous step in current cycle
-      const prevStep = steps[currentStepIndex - 1];
-      const newSteps = steps.map((step) => ({
-        ...step,
-        in_progress: step.id === prevStep.id,
-      }));
-      setSteps(newSteps);
-      setStorageItem(STORAGE_KEYS.STEPS, newSteps);
-      setCurrentRound((prev) => prev - 1);
+    if (currentExecIndex > 0) {
+      setCurrentExecIndex((prev) => prev - 1);
     } else if (currentCycle > 1) {
-      // Go to last step of previous cycle
-      const lastStep = steps[steps.length - 1];
-      const newSteps = steps.map((step) => ({
-        ...step,
-        in_progress: step.id === lastStep.id,
-      }));
-      setSteps(newSteps);
-      setStorageItem(STORAGE_KEYS.STEPS, newSteps);
-      setCurrentRound(steps.length);
+      setCurrentExecIndex(totalSteps - 1);
       setCurrentCycle((prev) => prev - 1);
     }
-  }, [timer, currentStepIndex, steps, currentCycle]);
+  }, [timer, currentExecIndex, currentCycle, totalSteps]);
 
   // Restart workout from beginning
   const restartWorkout = useCallback(() => {
     timer.reset();
-    const newSteps = steps.map((step, index) => ({
-      ...step,
-      in_progress: index === 0,
-    }));
-    setSteps(newSteps);
-    setStorageItem(STORAGE_KEYS.STEPS, newSteps);
-    setCurrentRound(1);
+    setCurrentExecIndex(0);
     setCurrentCycle(1);
     setIsEnded(false);
-  }, [timer, steps]);
+  }, [timer]);
 
   return {
     steps,
+    executionSteps,
+    totalSteps,
     currentStep,
     nextStep,
     currentCycle,
