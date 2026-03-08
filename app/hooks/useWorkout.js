@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { STORAGE_KEYS, DEFAULT_CYCLES_NUMBER } from '../lib/constants';
 import { getStorageItem, getStorageNumber } from '../lib/storage';
 import { flattenSteps, migrateSteps } from '../lib/flattenSteps';
@@ -24,6 +24,9 @@ export function useWorkout() {
   const { play: playSound, soundEnabled, toggleSound } = useSound('/sounds/1081.mp3');
   useWakeLock();
 
+  // Guard against rapid clicks causing exercise skips
+  const isNavigating = useRef(false);
+
   // Flatten steps for execution (supersets → individual exercises + rests)
   const executionSteps = useMemo(() => flattenSteps(steps), [steps]);
   const totalSteps = executionSteps.length;
@@ -35,6 +38,9 @@ export function useWorkout() {
 
   // Handle round completion
   const handleRoundComplete = useCallback(() => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
     if (currentExecIndex < totalSteps - 1) {
       // Move to next step
       setCurrentExecIndex((prev) => prev + 1);
@@ -73,6 +79,11 @@ export function useWorkout() {
     setIsLoaded(true);
   }, []);
 
+  // Release navigation guard after state has settled
+  useEffect(() => {
+    isNavigating.current = false;
+  }, [currentExecIndex, currentCycle]);
+
   // Handle auto-start after step change
   useEffect(() => {
     if (shouldAutoStart && currentStep) {
@@ -105,6 +116,9 @@ export function useWorkout() {
 
   // Go to previous step
   const previousStep = useCallback(() => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
     timer.reset();
 
     if (currentExecIndex > 0) {
@@ -112,6 +126,8 @@ export function useWorkout() {
     } else if (currentCycle > 1) {
       setCurrentExecIndex(totalSteps - 1);
       setCurrentCycle((prev) => prev - 1);
+    } else {
+      isNavigating.current = false;
     }
   }, [timer, currentExecIndex, currentCycle, totalSteps]);
 
