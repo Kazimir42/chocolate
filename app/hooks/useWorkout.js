@@ -133,6 +133,7 @@ export function useWorkout() {
 
   // Restart workout from beginning
   const restartWorkout = useCallback(() => {
+    isNavigating.current = false;
     timer.reset();
     setCurrentExecIndex(0);
     setCurrentCycle(1);
