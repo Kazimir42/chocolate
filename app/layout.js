@@ -1,7 +1,16 @@
-import { Inter } from 'next/font/google';
+import { Anton, Chivo_Mono } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const anton = Anton({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-display',
+});
+
+const chivoMono = Chivo_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+});
 
 export const metadata = {
   title: 'Chocolate - Minuteur',
@@ -20,7 +29,7 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: '#1a1a2e',
+  themeColor: '#0C0D10',
   width: 'device-width',
   initialScale: 1,
 };
@@ -28,7 +37,9 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
-      <body className={`${inter.className} text-white`}>{children}</body>
+      <body className={`${anton.variable} ${chivoMono.variable} font-body bg-bg text-ink`}>
+        {children}
+      </body>
     </html>
   );
 }

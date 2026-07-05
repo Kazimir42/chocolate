@@ -1,10 +1,15 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { TIMER_INTERVAL_MS } from '../lib/constants';
+import { TIMER_TICK_MS } from '../lib/constants';
 
 /**
- * Hook to manage a countdown/count-up timer
+ * Hook to manage a countdown/count-up timer.
+ *
+ * Elapsed time is derived from wall-clock timestamps, not from counting
+ * interval ticks: if the tab is throttled or the screen locks, the timer
+ * catches up to the real elapsed time as soon as the page is visible again.
+ *
  * @param {Object} options - Timer options
  * @param {number|null} options.targetDuration - Target duration in seconds (null for count-up only)
  * @param {Function} options.onComplete - Callback when timer reaches target
@@ -13,6 +18,7 @@ import { TIMER_INTERVAL_MS } from '../lib/constants';
 export function useTimer({ targetDuration = null, onComplete }) {
   const [elapsed, setElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const startedAtRef = useRef(null); // wall-clock ms of the (virtual) start
   const intervalRef = useRef(null);
   const onCompleteRef = useRef(onComplete);
 
@@ -21,11 +27,16 @@ export function useTimer({ targetDuration = null, onComplete }) {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  const stop = useCallback(() => {
+  const clearTick = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+  };
+
+  const stop = useCallback(() => {
+    clearTick();
+    startedAtRef.current = null;
     setIsRunning(false);
   }, []);
 
@@ -34,13 +45,32 @@ export function useTimer({ targetDuration = null, onComplete }) {
     setElapsed(0);
   }, [stop]);
 
-  const start = useCallback(() => {
-    if (intervalRef.current) return;
-
+  const startFrom = useCallback((initialElapsed) => {
+    clearTick();
+    startedAtRef.current = Date.now() - initialElapsed * 1000;
+    setElapsed(Math.floor(initialElapsed));
     setIsRunning(true);
     intervalRef.current = setInterval(() => {
-      setElapsed((prev) => prev + 1);
-    }, TIMER_INTERVAL_MS);
+      if (startedAtRef.current !== null) {
+        setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+      }
+    }, TIMER_TICK_MS);
+  }, []);
+
+  // Ref mirror so start() doesn't depend on elapsed (keeps callback stable)
+  const elapsedRef = useRef(0);
+  useEffect(() => {
+    elapsedRef.current = elapsed;
+  }, [elapsed]);
+
+  const start = useCallback(() => {
+    if (intervalRef.current) return;
+    startFrom(elapsedRef.current);
+  }, [startFrom]);
+
+  // Set elapsed without starting (used to restore a paused session)
+  const hydrate = useCallback((initialElapsed) => {
+    setElapsed(Math.floor(initialElapsed));
   }, []);
 
   const toggle = useCallback(() => {
@@ -50,6 +80,17 @@ export function useTimer({ targetDuration = null, onComplete }) {
       start();
     }
   }, [isRunning, start, stop]);
+
+  // Catch up immediately when the page becomes visible again
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && startedAtRef.current !== null) {
+        setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
 
   // Check if timer completed
   useEffect(() => {
@@ -61,11 +102,7 @@ export function useTimer({ targetDuration = null, onComplete }) {
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
+    return () => clearTick();
   }, []);
 
   const remaining = targetDuration !== null ? Math.max(0, targetDuration - elapsed) : null;
@@ -75,6 +112,8 @@ export function useTimer({ targetDuration = null, onComplete }) {
     remaining,
     isRunning,
     start,
+    startFrom,
+    hydrate,
     stop,
     reset,
     toggle,

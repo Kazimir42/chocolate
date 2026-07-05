@@ -1,16 +1,21 @@
 'use client';
 
+import { memo } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { DragHandleIcon, TrashIcon, CopyIcon } from './icons';
-import { SortableItem } from './SortableItem';
 import { SupersetExerciseRow } from './SupersetExerciseRow';
 
 /**
- * Card component for editing a superset step
+ * Card component for editing a superset step.
+ * Rests between exercises and between sets are injected automatically
+ * at execution time from the two rest fields.
+ * Memoized + sortable: only re-renders when its own step changes.
  */
-export function SupersetCard({
+export const SupersetCard = memo(function SupersetCard({
   step,
   onUpdateField,
   onAddExercise,
@@ -19,9 +24,15 @@ export function SupersetCard({
   onRemoveExercise,
   onDuplicate,
   onDelete,
-  dragHandleProps,
 }) {
   const exercises = step.exercises || [];
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: step.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -37,58 +48,112 @@ export function SupersetCard({
     }
   };
 
+  const handleNumberField = (field, value, min = 0) => {
+    if (field === 'sets') {
+      onUpdateField(step.id, field, Math.max(1, parseInt(value, 10) || 1));
+    } else {
+      const parsed = parseInt(value, 10);
+      onUpdateField(step.id, field, Number.isNaN(parsed) ? null : Math.max(min, parsed));
+    }
+  };
+
   return (
-    <div className="glass-card p-4 flex flex-col gap-4 border-l-4 border-orange">
-      {/* Header */}
+    <div ref={setNodeRef} style={style} className="card p-4 flex flex-col gap-4 border-l-4 !border-l-work">
+      {/* Header: handle, type, actions */}
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="shrink-0 cursor-grab touch-none p-1 text-text-muted"
+          className="shrink-0 cursor-grab touch-none p-2 -m-1 text-muted"
           aria-label="Réordonner"
-          {...dragHandleProps}
+          {...attributes}
+          {...listeners}
         >
           <DragHandleIcon />
         </button>
-        <span className="text-xs font-bold uppercase tracking-wide text-orange bg-orange/20 px-2 py-1 rounded">
-          Superset
-        </span>
+        <span className="eyebrow !text-work">Superset</span>
+        <div className="flex-1" />
+        <button
+          type="button"
+          className="btn-ghost rounded-lg p-2.5 text-muted"
+          onClick={() => onDuplicate(step.id)}
+          aria-label="Dupliquer le superset"
+        >
+          <CopyIcon />
+        </button>
+        <button
+          type="button"
+          className="btn-ghost rounded-lg p-2.5 text-danger"
+          onClick={() => onDelete(step.id)}
+          aria-label="Supprimer le superset"
+        >
+          <TrashIcon />
+        </button>
       </div>
 
       {/* Superset name */}
-      <div className="flex flex-col gap-1">
-        <label className="font-semibold text-sm text-text-muted uppercase tracking-wide" htmlFor={`superset-name-${step.id}`}>
-          Nom
-        </label>
-        <input
-          id={`superset-name-${step.id}`}
-          className="glass-input p-3 text-lg text-white w-full"
-          type="text"
-          value={step.name}
-          onChange={(e) => onUpdateField(step.id, 'name', e.target.value)}
-        />
-      </div>
+      <input
+        className="field p-3 text-lg w-full"
+        type="text"
+        value={step.name}
+        onChange={(e) => onUpdateField(step.id, 'name', e.target.value)}
+        placeholder="Nom du superset"
+        aria-label="Nom"
+      />
 
-      {/* Sets */}
-      <div className="flex flex-col gap-1">
-        <label className="font-semibold text-sm text-text-muted uppercase tracking-wide" htmlFor={`superset-sets-${step.id}`}>
-          Séries
-        </label>
-        <input
-          id={`superset-sets-${step.id}`}
-          className="glass-input p-3 text-lg text-white text-center w-full"
-          type="number"
-          min={1}
-          max={99}
-          value={step.sets || 1}
-          onChange={(e) => onUpdateField(step.id, 'sets', parseInt(e.target.value, 10) || 1)}
-        />
+      {/* Sets + auto rests */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="flex flex-col gap-1.5">
+          <label className="eyebrow" htmlFor={`superset-sets-${step.id}`}>
+            Séries
+          </label>
+          <input
+            id={`superset-sets-${step.id}`}
+            className="field p-3 text-lg text-center w-full"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={99}
+            value={step.sets || 1}
+            onChange={(e) => handleNumberField('sets', e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="eyebrow" htmlFor={`superset-restex-${step.id}`}>
+            Repos exo
+          </label>
+          <input
+            id={`superset-restex-${step.id}`}
+            className="field p-3 text-lg text-center w-full"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={3600}
+            value={step.restBetweenExercises ?? ''}
+            onChange={(e) => handleNumberField('restBetweenExercises', e.target.value)}
+            placeholder="—"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="eyebrow" htmlFor={`superset-restsets-${step.id}`}>
+            Repos série
+          </label>
+          <input
+            id={`superset-restsets-${step.id}`}
+            className="field p-3 text-lg text-center w-full"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={3600}
+            value={step.restBetweenSets ?? ''}
+            onChange={(e) => handleNumberField('restBetweenSets', e.target.value)}
+            placeholder="—"
+          />
+        </div>
       </div>
 
       {/* Sub-exercises with nested DndContext */}
       <div className="flex flex-col gap-2">
-        <label className="font-semibold text-sm text-text-muted uppercase tracking-wide">
-          Exercices
-        </label>
+        <span className="eyebrow">Exercices</span>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -97,60 +162,25 @@ export function SupersetCard({
         >
           <SortableContext items={exercises.map((ex) => ex.id)} strategy={verticalListSortingStrategy}>
             {exercises.map((ex) => (
-              <SortableItem key={ex.id} id={ex.id}>
-                {(exDragHandleProps) => (
-                  <SupersetExerciseRow
-                    exercise={ex}
-                    supersetId={step.id}
-                    onUpdate={onUpdateExercise}
-                    onRemove={onRemoveExercise}
-                    canRemove={exercises.length > 1}
-                    dragHandleProps={exDragHandleProps}
-                  />
-                )}
-              </SortableItem>
+              <SupersetExerciseRow
+                key={ex.id}
+                exercise={ex}
+                supersetId={step.id}
+                onUpdate={onUpdateExercise}
+                onRemove={onRemoveExercise}
+                canRemove={exercises.length > 1}
+              />
             ))}
           </SortableContext>
         </DndContext>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="btn-glass p-2 text-sm text-orange-light flex-1"
-            onClick={() => onAddExercise(step.id)}
-          >
-            + Exercice
-          </button>
-          <button
-            type="button"
-            className="btn-glass p-2 text-sm text-text-muted flex-1"
-            onClick={() => onAddExercise(step.id, { name: 'Repos', duration: 60, repetition: null })}
-          >
-            + Repos
-          </button>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex flex-row justify-end pt-2">
-        <div className="flex flex-row gap-2">
-          <button
-            type="button"
-            className="btn-glass p-2"
-            onClick={() => onDuplicate(step.id)}
-            aria-label="Dupliquer le superset"
-          >
-            <CopyIcon />
-          </button>
-          <button
-            type="button"
-            className="btn-glass p-2 text-danger-coral hover:bg-danger-coral/20 hover:border-danger-coral/50"
-            onClick={() => onDelete(step.id)}
-            aria-label="Supprimer le superset"
-          >
-            <TrashIcon />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn btn-ghost text-sm py-2.5"
+          onClick={() => onAddExercise(step.id)}
+        >
+          + Exercice
+        </button>
       </div>
     </div>
   );
-}
+});

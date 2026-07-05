@@ -5,36 +5,87 @@ import { STORAGE_KEYS } from '../lib/constants';
 import { getStorageItem, setStorageItem } from '../lib/storage';
 
 /**
- * Hook to manage sound playback
+ * Hook to manage sound playback through the Web Audio API.
+ *
+ * Mobile browsers block audio that isn't triggered by a user gesture,
+ * which made the whistle unreliable when fired from a timer callback.
+ * The fix: create/resume an AudioContext inside a real user gesture
+ * (call `unlock()` from any tap handler) — once unlocked, buffer
+ * playback from timers is allowed.
+ *
  * @param {string} src - Audio source URL
  * @returns {Object} Sound controls
  */
 export function useSound(src) {
-  const audioRef = useRef(null);
+  const ctxRef = useRef(null);
+  const bufferRef = useRef(null);
+  const fallbackRef = useRef(null);
   const [enabled, setEnabled] = useState(true);
 
   useEffect(() => {
     const saved = getStorageItem(STORAGE_KEYS.SOUND_ENABLED, true);
     setEnabled(saved);
-    // Preload audio file to avoid delay on first play
-    audioRef.current = new Audio(src);
-    audioRef.current.preload = 'auto';
+    // Fallback for browsers without Web Audio
+    fallbackRef.current = new Audio(src);
+    fallbackRef.current.preload = 'auto';
   }, [src]);
 
-  const play = useCallback(() => {
-    if (!enabled || !audioRef.current) return;
+  const ensureContext = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    if (!ctxRef.current) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      ctxRef.current = new Ctx();
+      fetch(src)
+        .then((res) => res.arrayBuffer())
+        .then((data) => ctxRef.current.decodeAudioData(data))
+        .then((buffer) => {
+          bufferRef.current = buffer;
+        })
+        .catch(() => {
+          // Decoding failed — fallback element will be used
+        });
+    }
+    return ctxRef.current;
+  }, [src]);
 
-    audioRef.current.currentTime = 0;
-    audioRef.current.play().catch(() => {
-      // Autoplay might be blocked by browser
-    });
-  }, [enabled]);
+  // Call from any user gesture (tap) to authorize audio playback
+  const unlock = useCallback(() => {
+    const ctx = ensureContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+  }, [ensureContext]);
+
+  const play = useCallback(() => {
+    if (!enabled) return;
+
+    const ctx = ensureContext();
+    if (ctx && bufferRef.current) {
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+      const source = ctx.createBufferSource();
+      source.buffer = bufferRef.current;
+      source.connect(ctx.destination);
+      source.start(0);
+      return;
+    }
+
+    // Fallback: HTMLAudioElement
+    if (fallbackRef.current) {
+      fallbackRef.current.currentTime = 0;
+      fallbackRef.current.play().catch(() => {});
+    }
+  }, [enabled, ensureContext]);
 
   const toggleSound = useCallback(() => {
-    const newValue = !enabled;
-    setEnabled(newValue);
-    setStorageItem(STORAGE_KEYS.SOUND_ENABLED, newValue);
-  }, [enabled]);
+    setEnabled((prev) => {
+      const newValue = !prev;
+      setStorageItem(STORAGE_KEYS.SOUND_ENABLED, newValue);
+      return newValue;
+    });
+  }, []);
 
-  return { play, soundEnabled: enabled, toggleSound };
+  return { play, unlock, soundEnabled: enabled, toggleSound };
 }

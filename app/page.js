@@ -10,6 +10,7 @@ export default function Home() {
 
   const {
     steps,
+    executionSteps,
     totalSteps,
     currentStep,
     nextStep,
@@ -18,6 +19,7 @@ export default function Home() {
     cyclesNumber,
     isEnded,
     isLoaded,
+    isResting,
     timer,
     soundEnabled,
     toggleSound,
@@ -33,9 +35,10 @@ export default function Home() {
 
   if (steps.length === 0) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-main p-4 gap-6 text-center">
-        <p className="text-xl text-text-muted">Aucun exercice défini</p>
-        <Link href="/steps" className="btn-orange text-white">
+      <main className="flex min-h-dvh flex-col items-center justify-center bg-bg p-4 gap-6 text-center">
+        <h1 className="display-name text-4xl text-ink">Aucun exercice</h1>
+        <p className="text-muted text-sm">Le programme est vide pour l&apos;instant.</p>
+        <Link href="/steps" className="btn btn-primary">
           Configurer mon programme
         </Link>
       </main>
@@ -44,26 +47,53 @@ export default function Home() {
 
   if (isEnded) {
     return (
-      <main className="flex min-h-screen flex-col items-center bg-gradient-main">
-        <CompletionScreen />
+      <main className="flex min-h-dvh flex-col items-center bg-bg">
+        <CompletionScreen onRestart={restartWorkout} />
       </main>
     );
   }
 
+  // The accent color encodes the state: orange = work, blue = rest
+  const accentBg = isResting ? 'bg-rest' : 'bg-work';
+
+  // Overall progress across the whole workout, including the running timer
+  const stepFraction = currentStep?.duration
+    ? Math.min(1, timer.elapsed / currentStep.duration)
+    : 0;
+  const totalUnits = Math.max(1, cyclesNumber * totalSteps);
+  const doneUnits = (currentCycle - 1) * totalSteps + (currentRound - 1) + stepFraction;
+  const progressPercent = Math.min(100, (doneUnits / totalUnits) * 100);
+
+  // What comes after this step (falls back to the next cycle's first step)
+  const upcoming = nextStep || (currentCycle < cyclesNumber ? executionSteps[0] : null);
+  const upcomingLabel = nextStep ? 'Suivant' : upcoming ? `Suivant · cycle ${currentCycle + 1}` : 'Dernier effort';
+
+  const hint = !timer.isRunning
+    ? (timer.elapsed > 0 ? 'En pause · appuyez pour reprendre' : 'Appuyez pour démarrer')
+    : (!currentStep?.duration ? 'Appuyez quand c’est fait' : null);
+
   return (
-    <main className="flex min-h-screen flex-col items-center bg-gradient-main">
-      {/* Current Step Section */}
-      <button
-        type="button"
-        className="h-[70vh] w-full cursor-pointer relative transition duration-300 flex flex-col text-left appearance-none bg-transparent border-none p-0"
+    <main className="flex h-dvh flex-col bg-bg overflow-hidden">
+      {/* Current Step Section — the whole zone acts as the play/pause button.
+          A div with role=button (not <button>) because it contains real buttons. */}
+      <div
+        role="button"
+        tabIndex={0}
+        className="flex-1 min-h-0 w-full cursor-pointer relative flex flex-col text-left select-none"
         onClick={handleTimerClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleTimerClick();
+          }
+        }}
         aria-label={timer.isRunning ? 'Pause' : 'Démarrer'}
       >
         {/* Header with actions and progress */}
-        <div className="flex justify-between items-start p-4">
+        <div className="flex justify-between items-start p-4 w-full">
           <div className="flex gap-0">
             <Link
-              className="p-3 opacity-60"
+              className="p-3 text-muted"
               href="/steps"
               onClick={(e) => e.stopPropagation()}
               aria-label="Programme"
@@ -71,7 +101,7 @@ export default function Home() {
               <ListIcon />
             </Link>
             <button
-              className="p-3 opacity-60"
+              className="p-3 text-muted"
               onClick={(e) => {
                 e.stopPropagation();
                 restartWorkout();
@@ -81,7 +111,7 @@ export default function Home() {
               <RestartIcon />
             </button>
             <button
-              className="p-3 opacity-60"
+              className="p-3 text-muted"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleSound();
@@ -102,7 +132,7 @@ export default function Home() {
         </div>
 
         {/* Central step display */}
-        <div className="flex-1 flex items-center justify-center px-4">
+        <div className="flex-1 min-h-0 flex items-center justify-center px-4 w-full">
           <StepDisplay
             step={currentStep}
             remaining={timer.remaining}
@@ -111,10 +141,10 @@ export default function Home() {
           />
         </div>
 
-        {/* Bottom bar: previous / start prompt / skip */}
-        <div className="flex items-center justify-between px-4 pb-4">
+        {/* Bottom bar: previous / hint / skip */}
+        <div className="flex items-center justify-between px-4 pb-3 w-full">
           <button
-            className="p-3 opacity-40"
+            className="p-3 text-muted"
             onClick={(e) => {
               e.stopPropagation();
               previousStep();
@@ -123,11 +153,11 @@ export default function Home() {
           >
             <PreviousIcon />
           </button>
-          <p className={`font-light text-lg text-text-muted transition-opacity ${timer.isRunning ? 'opacity-0' : 'opacity-100'}`}>
-            Appuyez pour démarrer
+          <p className={`eyebrow transition-opacity ${hint ? 'opacity-100' : 'opacity-0'}`}>
+            {hint || '·'}
           </p>
           <button
-            className="p-3 opacity-40"
+            className="p-3 text-muted"
             onClick={(e) => {
               e.stopPropagation();
               skipStep();
@@ -137,21 +167,23 @@ export default function Home() {
             <SkipIcon />
           </button>
         </div>
-      </button>
+
+        {/* Workout progress bar */}
+        <div className="w-full h-1 bg-line">
+          <div
+            className={`h-full ${accentBg}`}
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
 
       {/* Next Step Section */}
-      <div className="h-[30vh] next-section w-full flex flex-col">
-        <div className="px-4 pt-4 pb-2">
-          <p className="text-sm font-semibold text-orange-light uppercase tracking-wide">Suivant</p>
-        </div>
-        {nextStep ? (
-          <div className="flex-1 flex items-center justify-center px-4 pb-4">
-            <StepDisplay step={nextStep} remaining={null} size="small" />
-          </div>
+      <div className="w-full bg-surface border-t border-line px-5 py-4 flex flex-col gap-2 shrink-0">
+        <p className="eyebrow">{upcomingLabel}</p>
+        {upcoming ? (
+          <StepDisplay step={upcoming} remaining={null} size="small" />
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-2xl font-bold text-orange">Terminé !</p>
-          </div>
+          <p className="display-name text-2xl text-work">Fin de la séance</p>
         )}
       </div>
     </main>

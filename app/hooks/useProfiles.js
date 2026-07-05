@@ -19,10 +19,12 @@ export function useProfiles() {
     setActiveProfileId(savedActiveId);
   }, []);
 
-  // Save a new profile from the current workout
-  const saveProfile = useCallback((name) => {
-    const steps = getStorageItem(STORAGE_KEYS.STEPS, []);
-    const cyclesNumber = getStorageNumber(STORAGE_KEYS.CYCLES_NUMBER, 1);
+  // Save a new profile from the current workout.
+  // Steps/cycles can be passed directly (localStorage writes are debounced,
+  // so reading them back could miss the very latest edits).
+  const saveProfile = useCallback((name, currentSteps = null, currentCycles = null) => {
+    const steps = currentSteps ?? getStorageItem(STORAGE_KEYS.STEPS, []);
+    const cyclesNumber = currentCycles ?? getStorageNumber(STORAGE_KEYS.CYCLES_NUMBER, 1);
     const now = Date.now();
 
     const newProfile = {

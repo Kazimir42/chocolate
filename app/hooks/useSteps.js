@@ -1,12 +1,23 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { STORAGE_KEYS, DEFAULT_STEP, DEFAULT_CYCLES_NUMBER, DEFAULT_SUPERSET, DEFAULT_SUPERSET_EXERCISE, STEP_TYPES } from '../lib/constants';
 import { getStorageItem, getStorageNumber, setStorageItem, setStorageValue } from '../lib/storage';
 import { migrateSteps } from '../lib/flattenSteps';
 
+// Generate next unique ID across steps
+function getNextId(currentSteps) {
+  if (currentSteps.length === 0) return 1;
+  return Math.max(...currentSteps.map((s) => s.id)) + 1;
+}
+
 /**
- * Hook to manage workout steps
+ * Hook to manage workout steps.
+ *
+ * All updaters use functional setState so their identity is stable across
+ * renders — memoized cards only re-render when their own step changes.
+ * Persistence to localStorage is debounced to stay off the keystroke path.
+ *
  * @returns {Object} Steps state and controls
  */
 export function useSteps() {
@@ -14,27 +25,36 @@ export function useSteps() {
   const [cyclesNumber, setCyclesNumber] = useState(DEFAULT_CYCLES_NUMBER);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Helper: generate next unique ID across all steps (including superset sub-exercises)
-  const getNextId = useCallback((currentSteps) => {
-    if (currentSteps.length === 0) return 1;
-    return Math.max(...currentSteps.map((s) => s.id)) + 1;
-  }, []);
-
   // Load from localStorage on mount (with migration)
   useEffect(() => {
     const savedSteps = getStorageItem(STORAGE_KEYS.STEPS, []);
     const savedCycles = getStorageNumber(STORAGE_KEYS.CYCLES_NUMBER, DEFAULT_CYCLES_NUMBER);
 
-    const migrated = migrateSteps(savedSteps);
-    setSteps(migrated);
+    setSteps(migrateSteps(savedSteps));
     setCyclesNumber(savedCycles);
     setIsLoaded(true);
   }, []);
 
-  // Save steps to localStorage whenever they change
-  const saveSteps = useCallback((newSteps) => {
-    setSteps(newSteps);
-    setStorageItem(STORAGE_KEYS.STEPS, newSteps);
+  // Debounced persistence, flushed on unmount so no edit is ever lost
+  const stepsRef = useRef(steps);
+  const saveTimeoutRef = useRef(null);
+  useEffect(() => {
+    stepsRef.current = steps;
+    if (!isLoaded) return;
+    clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveTimeoutRef.current = null;
+      setStorageItem(STORAGE_KEYS.STEPS, stepsRef.current);
+    }, 300);
+    return () => clearTimeout(saveTimeoutRef.current);
+  }, [steps, isLoaded]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        setStorageItem(STORAGE_KEYS.STEPS, stepsRef.current);
+      }
+    };
   }, []);
 
   // Update cycles number
@@ -46,45 +66,42 @@ export function useSteps() {
 
   // Add a new exercise step
   const addStep = useCallback((overrides = {}) => {
-    const newId = getNextId(steps);
-    const newStep = { ...DEFAULT_STEP, ...overrides, id: newId };
-    saveSteps([...steps, newStep]);
-  }, [steps, saveSteps, getNextId]);
+    setSteps((prev) => [...prev, { ...DEFAULT_STEP, ...overrides, id: getNextId(prev) }]);
+  }, []);
 
   // Add a new superset step
   const addSuperset = useCallback(() => {
-    const newId = getNextId(steps);
-    const newSuperset = {
-      ...DEFAULT_SUPERSET,
-      id: newId,
-      exercises: [
-        { ...DEFAULT_SUPERSET_EXERCISE, id: 1 },
-        { ...DEFAULT_SUPERSET_EXERCISE, id: 2, name: 'Exercice 2' },
-      ],
-    };
-    saveSteps([...steps, newSuperset]);
-  }, [steps, saveSteps, getNextId]);
+    setSteps((prev) => [
+      ...prev,
+      {
+        ...DEFAULT_SUPERSET,
+        id: getNextId(prev),
+        exercises: [
+          { ...DEFAULT_SUPERSET_EXERCISE, id: 1 },
+          { ...DEFAULT_SUPERSET_EXERCISE, id: 2, name: 'Exercice 2' },
+        ],
+      },
+    ]);
+  }, []);
 
   // Update a top-level field on a step (works for both exercise and superset)
   const updateStep = useCallback((id, field, value) => {
-    const newSteps = steps.map((step) =>
+    setSteps((prev) => prev.map((step) =>
       step.id === id ? { ...step, [field]: value } : step
-    );
-    saveSteps(newSteps);
-  }, [steps, saveSteps]);
+    ));
+  }, []);
 
-  // Update a superset-specific field (restBetween, restAfter, name)
+  // Update a superset-specific field (sets, rests, name)
   const updateSupersetField = useCallback((supersetId, field, value) => {
-    const newSteps = steps.map((step) => {
+    setSteps((prev) => prev.map((step) => {
       if (step.id !== supersetId || step.type !== STEP_TYPES.SUPERSET) return step;
       return { ...step, [field]: value };
-    });
-    saveSteps(newSteps);
-  }, [steps, saveSteps]);
+    }));
+  }, []);
 
   // Add an exercise inside a superset
   const addSupersetExercise = useCallback((supersetId, overrides = {}) => {
-    const newSteps = steps.map((step) => {
+    setSteps((prev) => prev.map((step) => {
       if (step.id !== supersetId || step.type !== STEP_TYPES.SUPERSET) return step;
       const exercises = step.exercises || [];
       const newExId = exercises.length > 0 ? Math.max(...exercises.map((e) => e.id)) + 1 : 1;
@@ -92,13 +109,12 @@ export function useSteps() {
         ...step,
         exercises: [...exercises, { ...DEFAULT_SUPERSET_EXERCISE, ...overrides, id: newExId }],
       };
-    });
-    saveSteps(newSteps);
-  }, [steps, saveSteps]);
+    }));
+  }, []);
 
   // Update a field on a sub-exercise inside a superset
   const updateSupersetExercise = useCallback((supersetId, exerciseId, field, value) => {
-    const newSteps = steps.map((step) => {
+    setSteps((prev) => prev.map((step) => {
       if (step.id !== supersetId || step.type !== STEP_TYPES.SUPERSET) return step;
       return {
         ...step,
@@ -106,96 +122,80 @@ export function useSteps() {
           ex.id === exerciseId ? { ...ex, [field]: value } : ex
         ),
       };
-    });
-    saveSteps(newSteps);
-  }, [steps, saveSteps]);
+    }));
+  }, []);
 
   // Reorder sub-exercises inside a superset (index-based for dnd-kit)
   const reorderSupersetExercises = useCallback((supersetId, oldIndex, newIndex) => {
-    const newSteps = steps.map((step) => {
+    setSteps((prev) => prev.map((step) => {
       if (step.id !== supersetId || step.type !== STEP_TYPES.SUPERSET) return step;
       const exercises = [...step.exercises];
       if (oldIndex < 0 || oldIndex >= exercises.length || newIndex < 0 || newIndex >= exercises.length) return step;
       const [moved] = exercises.splice(oldIndex, 1);
       exercises.splice(newIndex, 0, moved);
       return { ...step, exercises };
-    });
-    saveSteps(newSteps);
-  }, [steps, saveSteps]);
+    }));
+  }, []);
 
   // Remove a sub-exercise from a superset
   const removeSupersetExercise = useCallback((supersetId, exerciseId) => {
-    const newSteps = steps.map((step) => {
+    setSteps((prev) => prev.map((step) => {
       if (step.id !== supersetId || step.type !== STEP_TYPES.SUPERSET) return step;
       return {
         ...step,
         exercises: step.exercises.filter((ex) => ex.id !== exerciseId),
       };
-    });
-    saveSteps(newSteps);
-  }, [steps, saveSteps]);
+    }));
+  }, []);
 
   // Duplicate a step (insert copy right after it)
   const duplicateStep = useCallback((id) => {
-    const index = steps.findIndex((step) => step.id === id);
-    if (index === -1) return;
-    const newId = getNextId(steps);
-    const original = steps[index];
+    setSteps((prev) => {
+      const index = prev.findIndex((step) => step.id === id);
+      if (index === -1) return prev;
+      const newId = getNextId(prev);
+      const original = prev[index];
 
-    let copy;
-    if (original.type === STEP_TYPES.SUPERSET) {
-      // Deep copy exercises with new IDs
-      const exercisesCopy = (original.exercises || []).map((ex, i) => ({
-        ...ex,
-        id: i + 1,
-      }));
-      copy = { ...original, id: newId, in_progress: false, exercises: exercisesCopy };
-    } else {
-      copy = { ...original, id: newId, in_progress: false };
-    }
+      let copy;
+      if (original.type === STEP_TYPES.SUPERSET) {
+        // Deep copy exercises with new IDs
+        const exercisesCopy = (original.exercises || []).map((ex, i) => ({
+          ...ex,
+          id: i + 1,
+        }));
+        copy = { ...original, id: newId, in_progress: false, exercises: exercisesCopy };
+      } else {
+        copy = { ...original, id: newId, in_progress: false };
+      }
 
-    const newSteps = [...steps];
-    newSteps.splice(index + 1, 0, copy);
-    saveSteps(newSteps);
-  }, [steps, saveSteps, getNextId]);
+      const newSteps = [...prev];
+      newSteps.splice(index + 1, 0, copy);
+      return newSteps;
+    });
+  }, []);
 
   // Delete a step
   const deleteStep = useCallback((id) => {
-    const newSteps = steps.filter((step) => step.id !== id);
-    saveSteps(newSteps);
-  }, [steps, saveSteps]);
+    setSteps((prev) => prev.filter((step) => step.id !== id));
+  }, []);
 
   // Reorder top-level steps (index-based for dnd-kit)
   const reorderSteps = useCallback((oldIndex, newIndex) => {
-    const newSteps = [...steps];
-    if (oldIndex < 0 || oldIndex >= newSteps.length || newIndex < 0 || newIndex >= newSteps.length) return;
-    const [moved] = newSteps.splice(oldIndex, 1);
-    newSteps.splice(newIndex, 0, moved);
-    saveSteps(newSteps);
-  }, [steps, saveSteps]);
-
-  // Reset all steps to not in progress
-  const resetProgress = useCallback(() => {
-    const newSteps = steps.map((step) => ({ ...step, in_progress: false }));
-    saveSteps(newSteps);
-    return newSteps;
-  }, [steps, saveSteps]);
-
-  // Set a step as in progress
-  const setStepInProgress = useCallback((stepId) => {
-    const newSteps = steps.map((step) => ({
-      ...step,
-      in_progress: step.id === stepId,
-    }));
-    saveSteps(newSteps);
-  }, [steps, saveSteps]);
+    setSteps((prev) => {
+      if (oldIndex < 0 || oldIndex >= prev.length || newIndex < 0 || newIndex >= prev.length) return prev;
+      const newSteps = [...prev];
+      const [moved] = newSteps.splice(oldIndex, 1);
+      newSteps.splice(newIndex, 0, moved);
+      return newSteps;
+    });
+  }, []);
 
   // Load a full workout (steps + cycles) from a profile
   const loadWorkout = useCallback((newSteps, newCycles) => {
-    saveSteps(migrateSteps(newSteps));
+    setSteps(migrateSteps(newSteps));
     setCyclesNumber(newCycles);
     setStorageValue(STORAGE_KEYS.CYCLES_NUMBER, newCycles);
-  }, [saveSteps]);
+  }, []);
 
   return {
     steps,
@@ -213,9 +213,6 @@ export function useSteps() {
     deleteStep,
     reorderSteps,
     updateCyclesNumber,
-    resetProgress,
-    setStepInProgress,
-    saveSteps,
     loadWorkout,
   };
 }

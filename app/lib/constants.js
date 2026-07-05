@@ -9,10 +9,11 @@ export const STORAGE_KEYS = {
   PROFILES: 'profiles',
   ACTIVE_PROFILE_ID: 'active_profile_id',
   SOUND_ENABLED: 'sound_enabled',
+  SESSION: 'workout_session',
 };
 
 // Timer constants
-export const TIMER_INTERVAL_MS = 1000;
+export const TIMER_TICK_MS = 250;
 
 // Step types
 export const STEP_TYPES = {
@@ -26,6 +27,8 @@ export const DEFAULT_STEP = {
   name: 'Exercice',
   duration: null,
   repetition: 8,
+  sets: 1,
+  restBetweenSets: null,
   in_progress: false,
 };
 
@@ -39,6 +42,8 @@ export const DEFAULT_SUPERSET = {
   type: STEP_TYPES.SUPERSET,
   name: 'Superset',
   sets: 1,
+  restBetweenExercises: null,
+  restBetweenSets: null,
   exercises: [],
   in_progress: false,
 };

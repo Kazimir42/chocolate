@@ -2,153 +2,117 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Gradient background */
-.bg-gradient-main {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
-    background-size: 200% 200%;
-    animation: gradient 15s ease infinite;
+/*
+ * Scoreboard design system — flat surfaces, no backdrop-filter
+ * (blur repaints were a major source of mobile jank).
+ */
+
+/* Flat card */
+.card {
+    background: theme('colors.surface');
+    border: 1px solid theme('colors.line');
+    border-radius: 14px;
 }
 
-@keyframes gradient {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+/* Flat input */
+.field {
+    background: theme('colors.raised');
+    border: 1px solid theme('colors.line');
+    border-radius: 10px;
+    color: theme('colors.ink');
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* Glassmorphism classes */
-.glass {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
-}
-
-.glass-light {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 16px;
-}
-
-.glass-card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    transition: all 0.3s ease;
-}
-
-.glass-card:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 107, 53, 0.3);
-}
-
-.glass-input {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-
-.glass-input:focus {
+.field:focus {
     outline: none;
-    border-color: #FF6B35;
-    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.3);
+    border-color: theme('colors.work.DEFAULT');
 }
 
-/* Orange glow effect */
-.glow-orange {
-    text-shadow: 0 0 20px rgba(255, 107, 53, 0.5),
-                 0 0 40px rgba(255, 107, 53, 0.3),
-                 0 0 60px rgba(255, 107, 53, 0.2);
+/* Hide number input spinners (numeric fields are tap-and-type on mobile) */
+.field::-webkit-outer-spin-button,
+.field::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.field[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
 
-/* Button styles */
-.btn-orange {
-    background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
-    border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
+/* Small uppercase mono label */
+.eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: theme('colors.muted');
+}
+
+/* Buttons */
+.btn {
+    border-radius: 10px;
+    padding: 12px 20px;
     font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    -webkit-tap-highlight-color: transparent;
 }
 
-.btn-orange:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+.btn-primary {
+    background: theme('colors.work.DEFAULT');
+    color: theme('colors.bg');
 }
 
-.btn-orange:active {
-    transform: translateY(0);
+.btn-primary:active {
+    filter: brightness(1.1);
 }
 
-.btn-glass {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    padding: 8px 16px;
-    transition: all 0.2s ease;
+.btn-ghost {
+    background: transparent;
+    border: 1px solid theme('colors.line');
+    color: theme('colors.ink');
 }
 
-.btn-glass:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 107, 53, 0.5);
+.btn-ghost:active {
+    background: theme('colors.raised');
 }
 
-/* Pulse animation for timer */
+.btn-danger {
+    background: theme('colors.danger.soft');
+    border: 1px solid transparent;
+    color: theme('colors.danger.DEFAULT');
+}
+
+/* Display name in gym-poster style */
+.display-name {
+    font-family: theme('fontFamily.display');
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 0.95;
+}
+
+/* Timer digits — tabular by nature (mono), tight */
+.digits {
+    font-family: theme('fontFamily.mono');
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+    font-weight: 700;
+}
+
+/* Breathing pulse on the running timer */
 .timer-pulse {
     animation: timerPulse 2s ease-in-out infinite;
 }
 
 @keyframes timerPulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
-}
-
-/* Success gradient */
-.bg-gradient-success {
-    background: linear-gradient(135deg, #FF6B35 0%, #FF7F66 50%, #FF8C5A 100%);
-}
-
-/* Border orange accent */
-.border-orange-accent {
-    border: 2px solid rgba(255, 107, 53, 0.5);
-}
-
-/* Pill badge */
-.pill-glass {
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    padding: 8px 16px;
+    50% { opacity: 0.75; }
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-    .bg-gradient-main,
-    .timer-pulse,
-    .glass-card,
-    .glass-input,
-    .btn-orange,
-    .btn-glass {
+    .timer-pulse {
         animation: none !important;
-        transition: none !important;
     }
-}
-
-/* Next step section */
-.next-section {
-    background: linear-gradient(180deg, rgba(255, 107, 53, 0.15) 0%, rgba(255, 127, 102, 0.1) 100%);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 107, 53, 0.3);
+    * {
+        transition-duration: 0.01ms !important;
+    }
 }

@@ -40,16 +40,16 @@ export function ProfileModal({ title, placeholder, confirmLabel, initialName = '
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       role="dialog"
       aria-modal="true"
       aria-label={title}
       onKeyDown={handleKeyDown}
     >
-      <div ref={dialogRef} className="glass-card p-6 w-full max-w-sm flex flex-col gap-4">
-        <h2 className="font-bold text-xl text-center">{title}</h2>
+      <div ref={dialogRef} className="card p-6 w-full max-w-sm flex flex-col gap-4">
+        <h2 className="display-name text-2xl text-center text-ink">{title}</h2>
         <input
-          className="glass-input p-3 text-white w-full"
+          className="field p-3 w-full"
           type="text"
           placeholder={placeholder}
           value={name}
@@ -63,14 +63,14 @@ export function ProfileModal({ title, placeholder, confirmLabel, initialName = '
         <div className="flex gap-2">
           <button
             type="button"
-            className="btn-glass p-3 flex-1"
+            className="btn btn-ghost flex-1"
             onClick={onClose}
           >
             Annuler
           </button>
           <button
             type="button"
-            className="btn-orange text-white flex-1 disabled:opacity-40"
+            className="btn btn-primary flex-1 disabled:opacity-40"
             onClick={handleConfirm}
             disabled={!name.trim()}
           >
