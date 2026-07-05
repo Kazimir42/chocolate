@@ -136,11 +136,10 @@ export function useWorkout() {
     isNavigating.current = false;
   }, [currentExecIndex, currentCycle]);
 
-  // Handle auto-start after step change
+  // Handle auto-start after step change — always from zero
   useEffect(() => {
     if (shouldAutoStart && currentStep) {
-      timer.reset();
-      timer.start();
+      timer.startFrom(0);
       setShouldAutoStart(false);
     }
   }, [shouldAutoStart, currentStep, timer]);

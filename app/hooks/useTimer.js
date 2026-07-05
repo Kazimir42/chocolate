@@ -40,28 +40,33 @@ export function useTimer({ targetDuration = null, onComplete }) {
     setIsRunning(false);
   }, []);
 
+  // Ref mirror of elapsed, updated synchronously (not via effect) so that
+  // reset() immediately followed by start() in the same tick sees 0 —
+  // an effect-based mirror lags one render and made the next step start
+  // with the previous step's elapsed time.
+  const elapsedRef = useRef(0);
+  const applyElapsed = useCallback((value) => {
+    const floored = Math.floor(value);
+    elapsedRef.current = floored;
+    setElapsed(floored);
+  }, []);
+
   const reset = useCallback(() => {
     stop();
-    setElapsed(0);
-  }, [stop]);
+    applyElapsed(0);
+  }, [stop, applyElapsed]);
 
   const startFrom = useCallback((initialElapsed) => {
     clearTick();
     startedAtRef.current = Date.now() - initialElapsed * 1000;
-    setElapsed(Math.floor(initialElapsed));
+    applyElapsed(initialElapsed);
     setIsRunning(true);
     intervalRef.current = setInterval(() => {
       if (startedAtRef.current !== null) {
-        setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+        applyElapsed((Date.now() - startedAtRef.current) / 1000);
       }
     }, TIMER_TICK_MS);
-  }, []);
-
-  // Ref mirror so start() doesn't depend on elapsed (keeps callback stable)
-  const elapsedRef = useRef(0);
-  useEffect(() => {
-    elapsedRef.current = elapsed;
-  }, [elapsed]);
+  }, [applyElapsed]);
 
   const start = useCallback(() => {
     if (intervalRef.current) return;
@@ -70,8 +75,8 @@ export function useTimer({ targetDuration = null, onComplete }) {
 
   // Set elapsed without starting (used to restore a paused session)
   const hydrate = useCallback((initialElapsed) => {
-    setElapsed(Math.floor(initialElapsed));
-  }, []);
+    applyElapsed(initialElapsed);
+  }, [applyElapsed]);
 
   const toggle = useCallback(() => {
     if (isRunning) {
@@ -85,12 +90,12 @@ export function useTimer({ targetDuration = null, onComplete }) {
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && startedAtRef.current !== null) {
-        setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+        applyElapsed((Date.now() - startedAtRef.current) / 1000);
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
+  }, [applyElapsed]);
 
   // Check if timer completed
   useEffect(() => {
