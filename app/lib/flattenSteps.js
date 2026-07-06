@@ -121,7 +121,7 @@ export function flattenSteps(steps) {
             id: `${step.id}_s${s}`,
             _set: { setIndex: s, setCount: sets, parentName: step.name },
           });
-          if (restSets && s < sets - 1) {
+          if (restSets) {
             result.push(makeRest(`${step.id}_s${s}_rest`, restSets, {
               _set: { setIndex: s, setCount: sets, parentName: step.name },
             }));
