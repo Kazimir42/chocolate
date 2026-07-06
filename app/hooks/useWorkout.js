@@ -65,15 +65,9 @@ export function useWorkout() {
     }
   }, [currentExecIndex, totalSteps, currentCycle, cyclesNumber]);
 
-  // Play sound then complete round (only for timer-based completion)
-  const handleTimerComplete = useCallback(() => {
-    playSound();
-    handleRoundComplete();
-  }, [playSound, handleRoundComplete]);
-
   const timer = useTimer({
     targetDuration: currentStep?.duration || null,
-    onComplete: handleTimerComplete,
+    onComplete: handleRoundComplete,
   });
 
   // Load data + saved session from localStorage
@@ -136,13 +130,16 @@ export function useWorkout() {
     isNavigating.current = false;
   }, [currentExecIndex, currentCycle]);
 
-  // Handle auto-start after step change — always from zero
+  // Handle auto-start after step change — always from zero.
+  // The whistle marks the START of each new step (rest over → go, exercise
+  // over → rest), which is the only moment it's actually useful.
   useEffect(() => {
     if (shouldAutoStart && currentStep) {
+      playSound();
       timer.startFrom(0);
       setShouldAutoStart(false);
     }
-  }, [shouldAutoStart, currentStep, timer]);
+  }, [shouldAutoStart, currentStep, timer, playSound]);
 
   // Authorize audio + keep the screen awake; must run inside a user gesture
   const primeDevice = useCallback(() => {
